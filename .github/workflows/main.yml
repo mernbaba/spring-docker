@@ -17,7 +17,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - run: mvn clean package -DskipTests
-      - run: mkdir staging && mv target/yb-workload-sim.jar target/yb-workload-sim-${{ env.build-number }}.jar && cp target/*.jar staging
+      - run: mkdir staging && mv target/jwt-demo-0.0.1-SNAPSHOT.jar target/jwt-demo-0.0.1-${{ env.build-number }}.jar && cp target/*.jar staging
       - uses: actions/upload-artifact@v4
         with:
           name: Package
