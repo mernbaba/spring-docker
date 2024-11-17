@@ -29,5 +29,5 @@ jobs:
       - uses: actions/upload-artifact@v4
         with:
           name: Package
-          path: staging/jwt-demo-0.0.1-${{ env.version }}.jar
+          path: staging/fitmark-be-${{ env.version }}.jar
           retention-days: 1
