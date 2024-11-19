@@ -1,6 +1,6 @@
 FROM openjdk:17-jdk-alpine
 
-LABEL org.opencontainers.image.authors="growsoc.com"
+# LABEL org.opencontainers.image.authors="growsoc.com"
 
 COPY target/jwt-demo-0.0.1-SNAPSHOT.jar fitmark-server.jar
 
