@@ -10,7 +10,7 @@ public enum ResponseCode {
 	SUCCESS(1000, "SUCCESS", ""), FAILED(1001, "FAILED", ""),
 	BAD_REQUEST(1002, "BAD_REQUEST", "Check your request object and tryagain"),
 	ERROR_STORING_DATA(1003, "ERROR_STORING_DATA", "Failed to store data, please contact for support"),
-	USER_NOT_FOUND(1004, "USER_NOT_FOUND", ""), USER_NAME_ALREADY_EXISTS(1005, "USER_NAME_ALREADY_EXISTS", ""),
+	USER_NOT_FOUND(1004, "USER_NOT_FOUND", ""), MOBILE_NUMBER_ALREADY_EXISTS(1005, "MOBILE_NUMBER_ALREADY_EXISTS", ""),
 	DEACTIVATED_USER(1006, "DEACTIVATED_USER", "User deactivated"),
 	INACTIVE_USER(1007, "INACTIVE_USER", "User is inactive"),
 
@@ -26,7 +26,8 @@ public enum ResponseCode {
 	INVALID_OTP(1014, "INVALID_OTP", "Please enter a valid OTP"),
 	OTP_EXPIRED(1015, "OTP_EXPIRED", "OTP expired try again"),
 	PASSWORD_UPDATED_SUCESSFULLY(1016, "PASSWORD_UPDATED_SUCESSFULLY", "Password updated successful"),
-	DUPLICATE_ENTRY(1017, "DUPLICATE_ENTRY", "Record already exists");
+	DUPLICATE_ENTRY(1017, "DUPLICATE_ENTRY", "Record already exists"),
+	INVALID_PERMISSIONS(1018, "INVALID_PERMISSIONS", "You do not have permission");
 
 	private final int code;
 

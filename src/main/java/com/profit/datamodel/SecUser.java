@@ -4,6 +4,7 @@ import java.util.Date;
 
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
+import org.springframework.beans.factory.annotation.Value;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
@@ -13,6 +14,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.PrePersist;
 import jakarta.persistence.Table;
 import lombok.Data;
 
@@ -20,7 +22,7 @@ import lombok.Data;
 @Table(name = "sec_user")
 @Data
 public class SecUser {
-
+	
 	@Id
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
@@ -92,11 +94,9 @@ public class SecUser {
 
 	@Column(name = "phone_number", unique = true, nullable = false, length = 20)
 	private String phoneNumber;
-
-//	// Relationships
-//	@ManyToOne
-//	@JoinColumn(name = "user_type", referencedColumnName = "usertype_code", insertable = false, updatable = false)
-//	private UserType userTypeEntity;
+	
+	@Column(name = "version", length = 20)
+	private String version;
 
 	@ManyToOne
 	@JoinColumns({

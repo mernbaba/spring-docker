@@ -1,33 +1,29 @@
 package com.profit.controller;
 
+import java.time.LocalDate;
 import java.util.List;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.profit.configuration.JwtTokenUtil;
+import com.profit.dto.CustomerPaymentSummaryDTO;
 import com.profit.dto.ResponseObject;
-import com.profit.dto.SecUserDTO;
-import com.profit.enumeration.ResponseCode;
-import com.profit.exceptions.CloudBaseException;
-import com.profit.service.SecUserService; // Assume this service exists
+import com.profit.service.CustomerPaymentSummaryService;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
-@RequestMapping("/api")
-public class SecUserController {
-
-	@Autowired
-	private SecUserService secUserService;
+@RequestMapping("/api/payment/summery")
+public class CustomerPaymentSummeryController {
 
 	@Autowired
 	HttpServletRequest request;
@@ -35,54 +31,58 @@ public class SecUserController {
 	@Autowired
 	JwtTokenUtil jwtTokenUtil;
 
+	@Autowired
+	CustomerPaymentSummaryService customerPaymentSummeryService;
+
 	@GetMapping("/getAllUsers")
-	public ResponseObject<List<SecUserDTO>> getAllUsers() {
-		String token = request.getHeader("Authorization");
-		token = StringUtils.replace(token, "Bearer ", "");
-		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
-		String company = (String) claims.get("company");
-		String branch = (String) claims.get("branch");
-		return secUserService.getAllUsers(company, branch);
-	}
-
-	@GetMapping("/getUser")
-	public ResponseObject<?> getProfile() {
+	public ResponseObject<List<CustomerPaymentSummaryDTO>> getAllUsers(@RequestParam String fromDate,
+			@RequestParam String toDate, @RequestParam String customerCode) {
 		String token = request.getHeader("Authorization");
 		token = StringUtils.replace(token, "Bearer ", "");
 
 		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
-		String username = (String) claims.getSubject();
-		return secUserService.getProfile(company, branch, username);
+
+		return customerPaymentSummeryService.getUsers(fromDate, toDate, customerCode, branch, company);
+
 	}
 
-	@PostMapping("/changePwd")
-	private ResponseObject<?> changePassword(@RequestParam String oldPwd, @RequestParam String newPwd) {
+	@GetMapping("/getUserPayments")
+	public ResponseObject<List<CustomerPaymentSummaryDTO>> getUserPayments(@RequestParam String customerCode) {
 		String token = request.getHeader("Authorization");
 		token = StringUtils.replace(token, "Bearer ", "");
+
 		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
-		String userName = (String) claims.getSubject();
-
-		if (oldPwd.equalsIgnoreCase(newPwd)) {
-			throw new CloudBaseException(ResponseCode.OLD_NEW_PWD_SAME);
-		} else {
-			return secUserService.changePassword(newPwd, company, branch, userName);
-		}
+		return customerPaymentSummeryService.getUserPayments(customerCode, branch, company);
 	}
-	
-	@DeleteMapping("/deleteCustomer/{userCode}")
-	private ResponseObject<ResponseCode> deleteCustomer(@PathVariable String userCode){
+
+	@PostMapping("/save")
+	public ResponseObject<CustomerPaymentSummaryDTO> saveCustomerPaymentSummery(
+			@RequestBody CustomerPaymentSummaryDTO dto) {
 		String token = request.getHeader("Authorization");
 		token = StringUtils.replace(token, "Bearer ", "");
+
 		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
-		String userName = (String) claims.getSubject();
-		
-		return secUserService.delete(userCode, userName);
-		
+		String username = claims.getSubject();
+		return customerPaymentSummeryService.save(dto, branch, company, username);
 	}
+
+	@PutMapping("/update")
+	public ResponseObject<CustomerPaymentSummaryDTO> updateCustomerPayments(
+			@RequestBody CustomerPaymentSummaryDTO dto) {
+		String token = request.getHeader("Authorization");
+		token = StringUtils.replace(token, "Bearer ", "");
+
+		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
+		String company = (String) claims.get("company");
+		String branch = (String) claims.get("branch");
+		String username = claims.getSubject();
+		return customerPaymentSummeryService.update(dto, branch, company, username);
+	}
+
 }

@@ -5,32 +5,26 @@ import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 
+import com.profit.datamodel.*;
+import com.profit.repository.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
-import com.profit.datamodel.BranchMaster;
-import com.profit.datamodel.CustomerMaster;
-import com.profit.datamodel.PrefixGenerator;
-import com.profit.datamodel.RoleMapping;
-import com.profit.datamodel.SecUser;
+//import com.profit.datamodel.CustomerReport;
 import com.profit.dto.CustomerMasterDTO;
+import com.profit.dto.CustomerPaymentSummaryDTO;
 import com.profit.dto.ResponseObject;
 import com.profit.enumeration.ResponseCode;
 import com.profit.exceptions.CloudBaseException;
-import com.profit.repository.BranchMasterRepository;
-import com.profit.repository.CustomerMasterRepository;
-import com.profit.repository.PrefixGeneratorRepository;
-import com.profit.repository.RoleMappingRepository;
-import com.profit.repository.SecUserRepository;
 
 import jakarta.transaction.Transactional;
 
 @Service
 public class CustomerMasterService {
 
-	private static long counter = 0;
+//	private static long counter = 0;
 
 	@Autowired
 	CustomerMasterRepository customerMasterRepository;
@@ -46,6 +40,18 @@ public class CustomerMasterService {
 
 	@Autowired
 	RoleMappingRepository roleMappingRepository;
+
+	@Autowired
+	CustomerPaymentDetailsRepository customerPaymentDetailsRepository;
+
+	@Autowired
+	CustomerPaymentSummaryRepository customerPaymentSummeryRepository;
+	
+	@Autowired
+	PTPaymentSummaryRepository ptPaymentSummaryRepository;
+
+	@Autowired
+	PTPaymentDetailsRepository ptPaymentDetailsRepository;
 
 	public ResponseObject<List<CustomerMasterDTO>> getAll(String company, String branch) {
 		List<CustomerMaster> customerMasterEntitys = customerMasterRepository.findAllByCompanyCodeAndBranchCode(company,
@@ -68,14 +74,15 @@ public class CustomerMasterService {
 		try {
 			CustomerMaster master = customerMasterRepository.findByPhoneNumber(dto.getPhoneNumber());
 			if (master != null) {
-				error = ResponseCode.USER_NAME_ALREADY_EXISTS;
+				error = ResponseCode.MOBILE_NUMBER_ALREADY_EXISTS;
 				throw new CloudBaseException(error);
 			} else {
-				CustomerMaster entity = new CustomerMaster();
+				CustomerMaster customerEntity = new CustomerMaster();
+
 				PrefixGenerator prefix = prefixGeneratorRepository.findByBranchCodeAndCompanyCodeAndPrefixCode(branch,
 						company, "CUSTOMER");
 				if (prefix != null) {
-					entity.setCustomerCode(
+					customerEntity.setCustomerCode(
 							prefix.getPrefix() + "-" + String.format("%03d", prefix.getLastGenerated() + 1));
 					prefix.setLastGenerated(prefix.getLastGenerated() + 1);
 					prefixGeneratorRepository.save(prefix);
@@ -90,37 +97,104 @@ public class CustomerMasterService {
 					prefixEntity.setPrefixDate(new Date());
 					prefixEntity.setLastGenerated(1L);
 					prefixGeneratorRepository.save(prefixEntity);
-					entity.setCustomerCode(
+					customerEntity.setCustomerCode(
 							prefixEntity.getPrefix() + "-" + String.format("%03d", prefixEntity.getLastGenerated()));
 				}
-				entity.setAddress(dto.getAddress());
-				entity.setCustomerName(dto.getCustomerName());
-				entity.setStartDateOfPlan(dto.getStartDateOfPlan());
-				entity.setEndDateOfPlan(dto.getEndDateOfPlan());
-				entity.setGender(dto.getGender());
-				entity.setHasPT(dto.getHasPT());
+				customerEntity.setAddress(dto.getAddress());
+				customerEntity.setCustomerName(dto.getCustomerName());
+				customerEntity.setStartDateOfPlan(dto.getStartDateOfPlan());
+				customerEntity.setEndDateOfPlan(dto.getEndDateOfPlan());
+				customerEntity.setGender(dto.getGender());
+				customerEntity.setHasPT(dto.getHasPT());
 				if (dto.getHasPT()) {
-					entity.setStaffName(dto.getStaffName());
+					customerEntity.setStaffCode(dto.getStaffCode());
+					customerEntity.setStaffName(dto.getStaffName());
+					customerEntity.setPtStartDateOfPlan(dto.getPtStartDateOfPlan());
+					customerEntity.setPtEndDateOfPlan(dto.getPtEndDateOfPlan());
+					customerEntity.setPtPaymentPlan(dto.getPtPaymentPlan());
 				} else {
-					entity.setStaffName(null);
+					customerEntity.setStaffName(null);
 				}
-				entity.setPhoneNumber(dto.getPhoneNumber());
-				entity.setEmail(dto.getEmail());
-				entity.setProfilePic(dto.getProfilePic());
-				entity.setPaymentPlan(dto.getPaymentPlan());
-				entity.setWorkoutPlan(dto.getWorkoutPlan());
-				entity.setShift(dto.getShift());
-				entity.setWeight(dto.getWeight());
-				entity.setIsActive(dto.getIsActive());
-				entity.setBranchCode(branch);
-				entity.setCompanyCode(company);
-				entity.setCreatedBy(username);
+				customerEntity.setPhoneNumber(dto.getPhoneNumber());
+				customerEntity.setEmail(dto.getEmail());
+				customerEntity.setProfilePic(dto.getProfilePic());
+				customerEntity.setPaymentPlan(dto.getPaymentPlan());
+				customerEntity.setWorkoutPlan(dto.getWorkoutPlan());
+				customerEntity.setShift(dto.getShift());
+				customerEntity.setWeight(dto.getWeight());
+				customerEntity.setIsActive(dto.getIsActive());
+				customerEntity.setBranchCode(branch);
+				customerEntity.setCompanyCode(company);
+				customerEntity.setCreatedBy(username);
 
-				customerMasterRepository.save(entity);
+				customerMasterRepository.save(customerEntity);
+				
+				if(dto.getHasPT()) {
+					PTPaymentSummary ptSummaryEntity = new PTPaymentSummary();
+					
+					BeanUtils.copyProperties(dto.getPtPaymentSummaryDTO(), ptSummaryEntity);
+					
+					ptSummaryEntity.setCustomerCode(customerEntity.getCustomerCode());
+					ptSummaryEntity.setCustomerName(customerEntity.getCustomerName());
+					ptSummaryEntity.setStaffCode(customerEntity.getStaffCode());
+					ptSummaryEntity.setStaffName(customerEntity.getStaffName());
+					ptSummaryEntity.setPtStartDateOfPlan(customerEntity.getPtStartDateOfPlan());
+					ptSummaryEntity.setPtEndDateOfPlan(customerEntity.getPtEndDateOfPlan());
+					ptSummaryEntity.setPtPaymentPlan(customerEntity.getPtPaymentPlan());
+					ptSummaryEntity.setCompanyCode(company);
+					ptSummaryEntity.setBranchCode(branch);
+					ptSummaryEntity.setCreatedBy(username);
+
+					Long id = ptPaymentSummaryRepository.save(ptSummaryEntity).getId();
+
+					List<PTPaymentDetails> detailsEntList = new ArrayList<>();
+
+					if(dto.getPtPaymentSummaryDTO().getPtPaymentDetails() != null) {
+
+						dto.getPtPaymentSummaryDTO().getPtPaymentDetails().forEach(details -> {
+							PTPaymentDetails detailsEntity = new PTPaymentDetails();
+							BeanUtils.copyProperties(details, detailsEntity);
+							detailsEntity.setPtPaymentSummeryId(id);
+							detailsEntity.setCreatedBy(username);
+							detailsEntList.add(detailsEntity);
+						});
+
+						ptPaymentDetailsRepository.saveAll(detailsEntList);
+					}
+				}
+
+				CustomerPaymentSummary reportEntity = new CustomerPaymentSummary();
+				
+				BeanUtils.copyProperties(dto.getCustomerPaymentSummaryDTO(), reportEntity);
+
+				reportEntity.setCustomerCode(customerEntity.getCustomerCode());
+				reportEntity.setCustomerName(customerEntity.getCustomerName());
+				reportEntity.setPlanStartDate(customerEntity.getStartDateOfPlan());
+				reportEntity.setPlanEndDate(customerEntity.getEndDateOfPlan());
+				reportEntity.setPaymentPlan(customerEntity.getPaymentPlan());
+				reportEntity.setCompanyCode(company);
+				reportEntity.setBranchCode(branch);
+				reportEntity.setCreatedBy(username);
+
+				Long id = customerPaymentSummeryRepository.save(reportEntity).getId();
+				List<CustomerPaymentDetails> detailsEntList = new ArrayList<CustomerPaymentDetails>();
+				
+				if(dto.getCustomerPaymentSummaryDTO().getCustomerPaymentDetails() != null) {
+					
+					dto.getCustomerPaymentSummaryDTO().getCustomerPaymentDetails().forEach(details -> {
+						CustomerPaymentDetails detailsEntity = new CustomerPaymentDetails();
+						BeanUtils.copyProperties(details, detailsEntity);
+						detailsEntity.setPaymentSummeryId(id);
+						detailsEntity.setCreatedBy(username);
+						detailsEntList.add(detailsEntity);
+					});
+					
+					customerPaymentDetailsRepository.saveAll(detailsEntList);
+				}
 
 				RoleMapping role = new RoleMapping();
 				role.setRoleCode("CUSTOMER");
-				role.setUserCode(entity.getCustomerCode());
+				role.setUserCode(customerEntity.getCustomerCode());
 				role.setBranchCode(branch);
 				role.setCompanyCode(company);
 				role.setCreatedBy(username);
@@ -128,26 +202,19 @@ public class CustomerMasterService {
 				roleMappingRepository.save(role);
 
 				CustomerMasterDTO cust = new CustomerMasterDTO();
-				BeanUtils.copyProperties(entity, cust);
+				BeanUtils.copyProperties(customerEntity, cust);
+
 				return ResponseObject.success(cust);
 			}
+		} catch (CloudBaseException exp) {
+			exp.printStackTrace();
+			throw exp;
 		} catch (Exception e) {
 			e.printStackTrace();
 			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
 		}
 	}
 
-//	public static String generateShortCode(String name) {
-//
-//		String[] nameParts = name.trim().split(" ");
-//		StringBuilder initials = new StringBuilder();
-//
-//		initials.append(nameParts[0].toUpperCase());
-//		counter++; // Increment the counter for each new code
-//		String shortCode = String.format("%s-%03d", initials, counter);
-//
-//		return shortCode;
-//	}
 
 	@Transactional
 	public ResponseObject<CustomerMasterDTO> updateCustomer(CustomerMasterDTO dto, String company, String branch,

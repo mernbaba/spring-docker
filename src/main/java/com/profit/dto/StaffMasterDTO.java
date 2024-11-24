@@ -34,5 +34,7 @@ public class StaffMasterDTO implements Serializable {
 	private LocalDate createdDate;
 	private String lastModifiedBy;
 	private LocalDate lastModifiedDate;
+	private String companyName;
+	private Boolean isAdmin;
 
 }

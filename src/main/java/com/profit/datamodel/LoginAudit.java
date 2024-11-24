@@ -11,6 +11,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinColumns;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import lombok.Data;
@@ -26,8 +27,8 @@ public class LoginAudit implements Serializable {
 	@GeneratedValue(strategy = GenerationType.IDENTITY)
 	private Long id;
 
-	@Column(name = "username", nullable = false, length = 50)
-	private String username;
+	@Column(name = "user_name", nullable = false, length = 50)
+	private String userName;
 
 	@Column(name = "login_date_time", nullable = false)
 	@CreationTimestamp
@@ -44,14 +45,22 @@ public class LoginAudit implements Serializable {
 
 	@Column(name = "status")
 	private String status;
+	
+	@Column(name = "app_name", length = 20)
+	private String appName;
 
-	@Column(name = "comments", length = 255)
-	private String comments; // Comments if the login fails
+	@Column(name = "comments", columnDefinition = "TEXT")
+	private String comments; 
 
-	@Column(name = "company_code", nullable = false, length = 56)
+	@Column(name = "company_code",  length = 56)
 	private String companyCode;
-
+	
+	@Column(name = "branch_code", length = 56)
+	private String branchCode;
+	
+	
 	@ManyToOne
-	@JoinColumn(name = "company_code", referencedColumnName = "company_code", insertable = false, updatable = false)
-	private CompanyMaster companyMaster;
+	@JoinColumn(name = "user_name", referencedColumnName = "user_name", insertable = false, updatable = false)
+	private SecUser secUser;
+
 }

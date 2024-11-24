@@ -4,11 +4,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
-import com.profit.datamodel.CompanyMaster;
+import com.profit.datamodel.CustomerPaymentDetails;
 
 @Repository
-public interface CompanyMasterRepository  extends JpaRepository<CompanyMaster,Long>,JpaSpecificationExecutor<CompanyMaster> {
-
-	CompanyMaster findByCompanyCode(String company);
+public interface CustomerPaymentDetailsRepository extends JpaRepository<CustomerPaymentDetails, Long>, JpaSpecificationExecutor<CustomerPaymentDetails>{
 
 }

@@ -9,7 +9,7 @@ import java.sql.Timestamp;
 
 @Entity
 @Data
-@Table(name = "tb_feedback_form", uniqueConstraints = @UniqueConstraint(name = "uk_feedback_form", columnNames = {"id, branch_code, company_code"}))
+@Table(name = "tb_feedback_form")
 public class FeedBackForm implements Serializable {
 
     private static final long serialVersionUID = 1L;

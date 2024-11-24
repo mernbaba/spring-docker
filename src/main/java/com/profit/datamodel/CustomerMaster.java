@@ -1,6 +1,7 @@
 package com.profit.datamodel;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.sql.Timestamp;
 import java.time.LocalDate;
 
@@ -67,6 +68,15 @@ public class CustomerMaster implements Serializable {
 	@Column(name = "has_pt")
 	private Boolean hasPT;
 	
+	@Column(name = "pt_start_date_of_plan")
+	private LocalDate ptStartDateOfPlan;
+	
+	@Column(name = "pt_end_date_of_plan")
+	private LocalDate ptEndDateOfPlan;
+	
+	@Column(name = "pt_payment_plan", length = 100)
+	private String ptPaymentPlan;
+		
 	@Column(name = "staff_code", length = 56)
 	private String staffCode;
 

@@ -31,11 +31,11 @@ public class JwtUserDetailsService implements UserDetailsService {
     @Autowired
     private JwtTokenUtil jwtTokenUtil;
 
-//    @Autowired
-//    private EntryFormRepository entryFormRepository;
-
     @Autowired
     private SecUserRepository secUserRepository;
+    
+    @Autowired
+    LoginAuditService loginAuditService;
 
     @Override
     public UserDetails loadUserByUsername(String username) {
@@ -53,6 +53,7 @@ public class JwtUserDetailsService implements UserDetailsService {
 
     public ResponseEntity<JwtResponse> getToken(JwtRequest ar) {
         JwtResponse response = generateJwtToken(ar.getUsername());
+        loginAuditService.save(ar, response.getCompany(), response.getBranch(), "SUCCESS");
         return ResponseEntity.ok(response);
     }
 

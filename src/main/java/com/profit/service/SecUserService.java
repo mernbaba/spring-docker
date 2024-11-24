@@ -92,7 +92,13 @@ public class SecUserService {
 	private OtpService otpService;
 	
 	@Autowired
+	LoginAuditService loginAuditService;
+	
+	@Autowired
 	private UserDeviceRepository userDeviceRepository;
+	
+	@Value("${app.version}")
+	private String appVersion;
 
 	public ResponseObject<List<SecUserDTO>> getAllUsers(String company, String branch) {
 		List<SecUser> entityList = secUserRepository.findAllByCompanyCodeAndBranchCode(company, branch);
@@ -218,6 +224,9 @@ public class SecUserService {
 	public ResponseObject<JwtResponse> authenticateUser(JwtRequest authenticationRequest) throws Exception {
 
 		SecUser secUser = secUserRepository.findByUserName(authenticationRequest.getUsername());
+//		if(authenticationRequest.getVersion().equals(appVersion)) {
+//			throw new CloudBaseException(ResponseCode.)
+//		}
 		if (secUser == null) {
 			System.out.println(ResponseCode.USER_NOT_FOUND);
 			throw new CloudBaseException(ResponseCode.USER_NOT_FOUND);
@@ -225,9 +234,16 @@ public class SecUserService {
 		boolean check = passwordEncoder.matches(authenticationRequest.getPassword(), secUser.getPassword());
 
 		if (check) {
+			if(authenticationRequest.getApp() != null && authenticationRequest.getApp().equalsIgnoreCase("Portal")) {
+				if(secUser.getUserType() == null || !secUser.getUserType().equalsIgnoreCase("STAFF")) {
+					throw new CloudBaseException(ResponseCode.INVALID_PERMISSIONS);
+				}
+			}
 			JwtResponse jwtresponse = userDetailsService.getToken(authenticationRequest).getBody();
 			return ResponseObject.success(jwtresponse);
+			
 		} else {
+			loginAuditService.save(authenticationRequest, null, null, "FAILURE");
 			throw new CloudBaseException(ResponseCode.INVALID_CREDENTIALS);
 		}
 
@@ -298,6 +314,7 @@ public class SecUserService {
 				throw new CloudBaseException(error);
 			}
 		} catch (Exception e) {
+			e.printStackTrace();
 			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
 		}
 
@@ -308,12 +325,14 @@ public class SecUserService {
 		try {
 			SecUser secUser = secUserRepository.findByUserName(username);
 			UserDevice device = userDeviceRepository.getLatestUserCode(secUser.getUserCode());
+			CompanyMaster companyMaster = companyMasterRepository.findByCompanyCode(company);
 
 			if (secUser != null) {
 				if (secUser.getUserType().equalsIgnoreCase("CUSTOMER")) {
 					CustomerMaster customer = customerMasterRepository.findByPhoneNumber(username);
 					CustomerMasterDTO dto = new CustomerMasterDTO();
 					BeanUtils.copyProperties(customer, dto);
+					dto.setCompanyName(companyMaster.getCompanyName());
 					dto.setDeviceId(secUser.getDeviceId());
 					if(device != null) {dto.setStatus(device.getStatus());}
 					dto.setExcused(secUser.getExcused());
@@ -322,7 +341,9 @@ public class SecUserService {
 					StaffMaster staff = staffMasterRepository.findByPhone(username);
 					StaffMasterDTO dto = new StaffMasterDTO();
 					BeanUtils.copyProperties(staff, dto);
+					dto.setCompanyName(companyMaster.getCompanyName());
 					dto.setDeviceId(secUser.getDeviceId());
+					dto.setIsAdmin(secUser.getIsAdmin());
 					if(device != null) {dto.setStatus(device.getStatus());}
 					dto.setExcused(secUser.getExcused());
 					return ResponseObject.success(dto);
@@ -481,6 +502,26 @@ public class SecUserService {
 			throw new CloudBaseException(ResponseCode.USER_NOT_FOUND);
 		}
 		
+		
+	}
+
+	public ResponseObject<ResponseCode> delete(String userCode, String username) {
+		try {
+			SecUser secUser = secUserRepository.findByUserCode(userCode);
+			if (secUser != null) {
+				if (secUser.getUserType().equalsIgnoreCase("CUSTOMER")) {
+					customerMasterRepository.updateCustomer(secUser.getUserCode(), username);
+				}
+				secUserRepository.deleteById(secUser.getId());
+				return ResponseObject.success(ResponseCode.SUCCESS);
+			} else {
+				throw new CloudBaseException(ResponseCode.USER_NOT_FOUND);
+			}
+		}catch (CloudBaseException e) {
+			throw e;
+		}catch (Exception e) {
+			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
+		}
 		
 	}
 

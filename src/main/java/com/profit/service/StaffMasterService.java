@@ -75,7 +75,7 @@ public class StaffMasterService {
 		try {
 			StaffMaster master = staffMasterRepository.findByPhone(dto.getPhone());
 			if (master != null) {
-				error = ResponseCode.USER_NAME_ALREADY_EXISTS;
+				error = ResponseCode.MOBILE_NUMBER_ALREADY_EXISTS;
 				throw new CloudBaseException(error);
 			} else {
 				StaffMaster entity = new StaffMaster();

@@ -6,6 +6,7 @@ import java.time.LocalDate;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 
+import jakarta.persistence.Column;
 import lombok.Data;
 
 @Data
@@ -26,6 +27,9 @@ public class CustomerMasterDTO implements Serializable {
 	private String workoutPlan;
 	private String gender;
 	private Boolean hasPT;
+	private LocalDate ptStartDateOfPlan;
+	private LocalDate ptEndDateOfPlan;
+	private String ptPaymentPlan;
 	private String staffCode;
 	private String staffName;
 	private String shift;
@@ -40,5 +44,8 @@ public class CustomerMasterDTO implements Serializable {
 	private String deviceId;
 	private String status;
 	private String excused;
+	private String companyName;
+	private CustomerPaymentSummaryDTO  customerPaymentSummaryDTO;
+	private PTPaymentSummaryDTO ptPaymentSummaryDTO;
 
 }
