@@ -7,13 +7,17 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
-import com.profit.datamodel.*;
-import com.profit.dto.*;
-import lombok.extern.slf4j.Slf4j;
+import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.profit.datamodel.CustomerMaster;
+import com.profit.datamodel.PTPaymentDetails;
+import com.profit.datamodel.PTPaymentSummary;
+import com.profit.dto.PTPaymentDetailsDTO;
+import com.profit.dto.PTPaymentSummaryDTO;
+import com.profit.dto.ResponseObject;
 import com.profit.enumeration.ResponseCode;
 import com.profit.exceptions.CloudBaseException;
 import com.profit.repository.CustomerMasterRepository;
@@ -23,162 +27,168 @@ import com.profit.repository.PTPaymentSummaryRepository;
 import jakarta.transaction.Transactional;
 
 @Service
-@Slf4j
 public class PTPaymentSummaryService {
 
-    @Autowired
-    PTPaymentSummaryRepository ptPaymentSummaryRepository;
+	@Autowired
+	PTPaymentSummaryRepository ptPaymentSummaryRepository;
 
-    @Autowired
-    CustomerMasterRepository customerMasterRepository;
+	@Autowired
+	CustomerMasterRepository customerMasterRepository;
 
-    @Autowired
-    PTPaymentDetailsRepository ptPaymentDetailsRepository;
+	@Autowired
+	PTPaymentDetailsRepository ptPaymentDetailsRepository;
 
-    public ResponseObject<List<PTPaymentSummaryDTO>> getAllByDates(String fromDate, String toDate, String customerCode,
-                                                                   String branch, String company) {
+	public ResponseObject<List<PTPaymentSummaryDTO>> getAllByDates(String fromDate, String toDate, String customerCode,
+			String branch, String company) {
 
-        try {
+		try {
 
-            DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+			List<PTPaymentSummaryDTO> dtoList = new ArrayList<>();
+			List<PTPaymentSummary> paymentEntityList = new ArrayList<>();
 
-            LocalDate fromDt = LocalDate.parse(fromDate, format);
-            LocalDate toDt = LocalDate.parse(toDate, format);
+			if (!StringUtils.isBlank(fromDate) && !StringUtils.isBlank(toDate)) {
+				DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
 
-            List<PTPaymentSummaryDTO> dtoList = new ArrayList<>();
+				LocalDate fromDt = LocalDate.parse(fromDate, format);
+				LocalDate toDt = LocalDate.parse(toDate, format);
 
-            List<PTPaymentSummary> paymentEntityList = new ArrayList<>();
+				if (customerCode.equalsIgnoreCase("ALL")) {
 
-            if (customerCode.equalsIgnoreCase("ALL")) {
+					paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDates(fromDt, toDt, branch, company);
+				} else {
+					paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDatesWithCustomerCode(fromDt, toDt,
+							customerCode, branch, company);
+				}
+			} else {
+				paymentEntityList = ptPaymentSummaryRepository.findByCustomerCode(customerCode);
+			}
+			List<Long> paymentIds = paymentEntityList.stream().map(PTPaymentSummary::getId)
+					.collect(Collectors.toList());
 
-                paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDates(fromDt, toDt, branch, company);
-            } else {
-                paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDatesWithCustomerCode(fromDt, toDt, customerCode, branch, company);
-            }
+			List<PTPaymentDetails> detailsList = ptPaymentDetailsRepository.getDataBySummaryIds(paymentIds);
 
-            List<PTPaymentDetails> detailsList = ptPaymentDetailsRepository.findAll();
+			Map<Long, List<PTPaymentDetailsDTO>> detailsMap = detailsList.stream().map(detailsEntity -> {
+				PTPaymentDetailsDTO detailsDto = new PTPaymentDetailsDTO();
+				BeanUtils.copyProperties(detailsEntity, detailsDto);
+				return detailsDto;
+			}).collect(Collectors.groupingBy(PTPaymentDetailsDTO::getPtPaymentSummeryId));
 
-            Map<Long, List<PTPaymentDetailsDTO>> detailsMap = detailsList.stream().map(detailsEntity -> {
-                PTPaymentDetailsDTO detailsDto = new PTPaymentDetailsDTO();
-                BeanUtils.copyProperties(detailsEntity, detailsDto);
-                return detailsDto;
-            }).collect(Collectors.groupingBy(PTPaymentDetailsDTO::getPtPaymentSummeryId));
+			if (paymentEntityList != null) {
+				paymentEntityList.forEach(entity -> {
+					PTPaymentSummaryDTO dto = new PTPaymentSummaryDTO();
+					BeanUtils.copyProperties(entity, dto);
+					List<PTPaymentDetailsDTO> paymentDetailsList = detailsMap.getOrDefault(entity.getId(),
+							new ArrayList<>());
+					dto.setPtPaymentDetails(paymentDetailsList);
+					dtoList.add(dto);
+				});
+			}
+			return ResponseObject.success(dtoList);
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new CloudBaseException(ResponseCode.INVALID_QUERY);
+		}
 
-            if (paymentEntityList != null) {
-                paymentEntityList.forEach(entity -> {
-                    PTPaymentSummaryDTO dto = new PTPaymentSummaryDTO();
-                    BeanUtils.copyProperties(entity, dto);
-                    List<PTPaymentDetailsDTO> paymentDetailsList = detailsMap.getOrDefault(entity.getId(),
-                            new ArrayList<>());
-                    dto.setPtPaymentDetails(paymentDetailsList);
-                    dtoList.add(dto);
-                });
-            }
-            return ResponseObject.success(dtoList);
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new CloudBaseException(ResponseCode.INVALID_QUERY);
-        }
+	}
 
-    }
+	@Transactional
+	public ResponseObject<PTPaymentSummaryDTO> save(PTPaymentSummaryDTO dto, String branch, String company,
+			String username) {
 
+		try {
 
-    @Transactional
-    public ResponseObject<PTPaymentSummaryDTO> save(PTPaymentSummaryDTO dto, String branch, String company,
-                                                    String username) {
+			PTPaymentSummary entity = new PTPaymentSummary();
+			BeanUtils.copyProperties(dto, entity);
 
-        try {
+			entity.setCompanyCode(company);
+			entity.setBranchCode(branch);
+			entity.setCreatedBy(username);
 
-            PTPaymentSummary entity = new PTPaymentSummary();
-            BeanUtils.copyProperties(dto, entity);
+			CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
 
-            entity.setCompanyCode(company);
-            entity.setBranchCode(branch);
-            entity.setCreatedBy(username);
+			if (customerMaster.getPtEndDateOfPlan() == null
+					|| dto.getPtStartDateOfPlan().isAfter(customerMaster.getPtEndDateOfPlan())) {
 
-            CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
+				customerMaster.setHasPT(true);
+				customerMaster.setStaffCode(dto.getStaffCode());
+				customerMaster.setStaffName(dto.getStaffName());
+				customerMaster.setPtStartDateOfPlan(dto.getPtStartDateOfPlan());
+				customerMaster.setPtEndDateOfPlan(dto.getPtEndDateOfPlan());
+				customerMaster.setPtPaymentPlan(dto.getPtPaymentPlan());
+				customerMaster.setLastModifiedBy(username);
 
-            if (dto.getPtStartDateOfPlan().isAfter(customerMaster.getPtEndDateOfPlan())) {
+				customerMasterRepository.save(customerMaster);
 
-                customerMaster.setHasPT(true);
-                customerMaster.setStaffCode(dto.getStaffCode());
-                customerMaster.setStaffName(dto.getStaffName());
-                customerMaster.setPtStartDateOfPlan(dto.getPtStartDateOfPlan());
-                customerMaster.setPtEndDateOfPlan(dto.getPtEndDateOfPlan());
-                customerMaster.setLastModifiedBy(username);
+			}
 
-                customerMasterRepository.save(customerMaster);
+			Long id = ptPaymentSummaryRepository.save(entity).getId();
 
-            }
+			List<PTPaymentDetails> detailtsEntityList = new ArrayList<>();
+			if (dto.getPtPaymentDetails() != null && !dto.getPtPaymentDetails().isEmpty()) {
+				dto.getPtPaymentDetails().forEach(details -> {
+					PTPaymentDetails detailsEnt = new PTPaymentDetails();
+					BeanUtils.copyProperties(details, detailsEnt);
+					detailsEnt.setPtPaymentSummeryId(id);
+					detailsEnt.setCreatedBy(username);
+					detailtsEntityList.add(detailsEnt);
+				});
 
-            Long id = ptPaymentSummaryRepository.save(entity).getId();
+				ptPaymentDetailsRepository.saveAll(detailtsEntityList);
+			}
 
-            List<PTPaymentDetails> detailtsEntityList = new ArrayList<>();
-            if (dto.getPtPaymentDetails() != null && !dto.getPtPaymentDetails().isEmpty()) {
-                dto.getPtPaymentDetails().forEach(details -> {
-                    PTPaymentDetails detailsEnt = new PTPaymentDetails();
-                    BeanUtils.copyProperties(details, detailsEnt);
-                    detailsEnt.setPtPaymentSummeryId(id);
-                    detailsEnt.setCreatedBy(username);
-                    detailtsEntityList.add(detailsEnt);
-                });
+			PTPaymentSummaryDTO responseDTO = new PTPaymentSummaryDTO();
+			BeanUtils.copyProperties(entity, responseDTO);
+			return ResponseObject.success(responseDTO);
 
-                ptPaymentDetailsRepository.saveAll(detailtsEntityList);
-            }
+		} catch (Exception e) {
+			// TODO: handle exception
+			e.printStackTrace();
+			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
+		}
 
-            PTPaymentSummaryDTO responseDTO = new PTPaymentSummaryDTO();
-            BeanUtils.copyProperties(entity, responseDTO);
-            return ResponseObject.success(responseDTO);
+	}
 
-        } catch (Exception e) {
-            // TODO: handle exception
-            e.printStackTrace();
-            throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
-        }
+	@Transactional
+	public ResponseObject<PTPaymentSummaryDTO> update(PTPaymentSummaryDTO dto, String branch, String company,
+			String username) {
 
-    }
+		try {
 
-    @Transactional
-    public ResponseObject<PTPaymentSummaryDTO> update(PTPaymentSummaryDTO dto, String branch, String company,
-                                                      String username) {
+			PTPaymentSummary entity = ptPaymentSummaryRepository.findById(dto.getId())
+					.orElseThrow(() -> new CloudBaseException(ResponseCode.USER_NOT_FOUND));
 
-        try {
+			BeanUtils.copyProperties(dto, entity);
 
-            PTPaymentSummary entity = ptPaymentSummaryRepository.findById(dto.getId())
-                    .orElseThrow(() -> new CloudBaseException(ResponseCode.USER_NOT_FOUND));
+			entity.setLastModifiedBy(username);
 
-            BeanUtils.copyProperties(dto, entity);
+			Long id = ptPaymentSummaryRepository.save(entity).getId();
 
-            entity.setLastModifiedBy(username);
+			List<PTPaymentDetails> detailsEntityList = new ArrayList<>();
+			if (dto.getPtPaymentDetails() != null) {
+				dto.getPtPaymentDetails().forEach(details -> {
+					PTPaymentDetails detailsEnt = new PTPaymentDetails();
+					BeanUtils.copyProperties(details, detailsEnt);
+					if (detailsEnt.getId() == null) {
+						detailsEnt.setPtPaymentSummeryId(id);
+						detailsEnt.setCreatedBy(username);
 
-            Long id = ptPaymentSummaryRepository.save(entity).getId();
+					} else {
+						detailsEnt.setLastModifiedBy(username);
+					}
+					detailsEntityList.add(detailsEnt);
+				});
+				ptPaymentDetailsRepository.saveAll(detailsEntityList);
+			}
 
-            List<PTPaymentDetails> detailsEntityList = new ArrayList<>();
-            if (dto.getPtPaymentDetails() != null) {
-                dto.getPtPaymentDetails().forEach(details -> {
-                    PTPaymentDetails detailsEnt = new PTPaymentDetails();
-                    BeanUtils.copyProperties(details, detailsEnt);
-                    if (detailsEnt.getId() == null) {
-                        detailsEnt.setPtPaymentSummeryId(id);
-                        detailsEnt.setCreatedBy(username);
+			PTPaymentSummaryDTO responseDTO = new PTPaymentSummaryDTO();
+			BeanUtils.copyProperties(entity, responseDTO);
+			return ResponseObject.success(responseDTO);
 
-                    } else {
-                        detailsEnt.setLastModifiedBy(username);
-                    }
-                    detailsEntityList.add(detailsEnt);
-                });
-                ptPaymentDetailsRepository.saveAll(detailsEntityList);
-            }
+		} catch (Exception e) {
+			e.printStackTrace();
+			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
+		}
 
-            PTPaymentSummaryDTO responseDTO = new PTPaymentSummaryDTO();
-            BeanUtils.copyProperties(entity, responseDTO);
-            return ResponseObject.success(responseDTO);
-
-        } catch (Exception e) {
-            e.printStackTrace();
-            throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
-        }
-
-    }
+	}
 
 }

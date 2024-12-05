@@ -5,7 +5,6 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.BeanUtils;
@@ -60,9 +59,10 @@ public class CustomerPaymentSummaryService {
 						customerCode, branch, company);
 			}
 
-//			List<CustomerPaymentDetailsDTO> paymentDetailsList = new ArrayList<CustomerPaymentDetailsDTO>();
+			List<Long> paymentIds = paymentEntityList.stream().map(CustomerPaymentSummary::getId)
+					.collect(Collectors.toList());
 
-			List<CustomerPaymentDetails> detailsList = customerPaymentDetailsRepository.findAll();
+			List<CustomerPaymentDetails> detailsList = customerPaymentDetailsRepository.getDataBySummaryIds(paymentIds);
 
 			Map<Long, List<CustomerPaymentDetailsDTO>> detailsMap = detailsList.stream().map(detailsEntity -> {
 				CustomerPaymentDetailsDTO detailsDto = new CustomerPaymentDetailsDTO();

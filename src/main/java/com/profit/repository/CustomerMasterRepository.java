@@ -1,5 +1,6 @@
 package com.profit.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -30,5 +31,8 @@ public interface CustomerMasterRepository extends JpaRepository<CustomerMaster,L
 	List<CustomerMaster> findAllByIsActive();
 
 	Optional<CustomerMaster> findByCustomerCode(String customerCode);
+
+	@Query(value = "SELECT * from customer_master WHERE is_active = true AND has_pt = true", nativeQuery = true)
+	Collection<CustomerMaster> findAllByIsActiveAndHasPt();
 
 }

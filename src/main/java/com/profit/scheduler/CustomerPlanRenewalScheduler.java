@@ -24,13 +24,13 @@ public class CustomerPlanRenewalScheduler {
 	CustomerMasterRepository customerMasterRepository;
 
 	@Autowired
-	CustomerPaymentSummaryRepository customerPaymentSummeryRepository;
+	CustomerPaymentSummaryRepository customerPaymentSummaryRepository;
 
 	@Scheduled(cron = "0 30 18 * * ?")
 //	@Scheduled(cron = "0 2 * * * ?")
 	public synchronized void checkAllCustomersPlanRenewals() {
 		
-		System.err.println("Running schedular........");
+		System.err.println("Running customer Payment Summary schedular........");
 
 		try {
 			List<String> customerCodes = customerMasterRepository.findAllByIsActive().stream()
@@ -38,7 +38,7 @@ public class CustomerPlanRenewalScheduler {
 							&& customer.getEndDateOfPlan().isBefore(LocalDate.now()))
 					.map(CustomerMaster::getCustomerCode).collect(Collectors.toList());
 
-			List<CustomerPaymentSummary> latestValidRecords = customerPaymentSummeryRepository
+			List<CustomerPaymentSummary> latestValidRecords = customerPaymentSummaryRepository
 					.findByCustomerCode(customerCodes).stream()
 					.collect(Collectors.groupingBy(CustomerPaymentSummary::getCustomerCode)).values().stream()
 					.map(group -> group.stream().max(Comparator.comparing(CustomerPaymentSummary::getPlanStartDate))
