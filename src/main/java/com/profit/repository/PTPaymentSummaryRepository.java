@@ -1,14 +1,15 @@
 package com.profit.repository;
 
+import java.time.LocalDate;
+import java.util.List;
+
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
+import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import com.profit.datamodel.PTPaymentSummary;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Repository
 public interface PTPaymentSummaryRepository extends JpaRepository<PTPaymentSummary, Long>, JpaSpecificationExecutor<PTPaymentSummary>{
@@ -27,4 +28,9 @@ public interface PTPaymentSummaryRepository extends JpaRepository<PTPaymentSumma
             "AND ((pt_start_date_of_plan BETWEEN :fromDt AND :toDt OR pt_end_date_of_plan BETWEEN :fromDt AND :toDt)\n" +
             "OR (:fromDt BETWEEN pt_start_date_of_plan AND pt_end_date_of_plan OR :toDt BETWEEN pt_start_date_of_plan AND pt_end_date_of_plan))", nativeQuery = true)
     List<PTPaymentSummary> getPtsByPlanDatesWithCustomerCode(LocalDate fromDt, LocalDate toDt, String customerCode, String branch, String company);
+
+	List<PTPaymentSummary> findByCustomerCode(String customerCode);
+
+	@Query(value = "SELECT * FROM tb_pt_payment_summary WHERE customer_code IN (:customerCodes)", nativeQuery = true)
+	List<PTPaymentSummary> findByCustomerCode(@Param("customerCodes") List<String> customerCodes);
 }

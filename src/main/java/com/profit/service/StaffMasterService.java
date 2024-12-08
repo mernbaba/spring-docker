@@ -9,6 +9,7 @@ import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import com.profit.datamodel.CustomerMaster;
 import com.profit.datamodel.PrefixGenerator;
 import com.profit.datamodel.RoleMapping;
 import com.profit.datamodel.SecUser;
@@ -18,6 +19,7 @@ import com.profit.dto.StaffMasterDTO;
 import com.profit.enumeration.ResponseCode;
 import com.profit.exceptions.CloudBaseException;
 import com.profit.repository.BranchMasterRepository;
+import com.profit.repository.CustomerMasterRepository;
 import com.profit.repository.PrefixGeneratorRepository;
 import com.profit.repository.RoleMappingRepository;
 import com.profit.repository.SecUserRepository;
@@ -42,6 +44,9 @@ public class StaffMasterService {
 
 	@Autowired
 	RoleMappingRepository roleMappingRepository;
+	
+	@Autowired
+	CustomerMasterRepository customerMasterRepository;
 
 	public ResponseObject<List<StaffMasterDTO>> getAll(String company, String branch) {
 		List<StaffMaster> entityList = staffMasterRepository.findAllByCompanyCodeAndBranchCode(company, branch);
@@ -73,52 +78,59 @@ public class StaffMasterService {
 	public ResponseObject<StaffMasterDTO> save(StaffMasterDTO dto, String company, String branch, String username) {
 		ResponseCode error = null;
 		try {
-			StaffMaster master = staffMasterRepository.findByPhone(dto.getPhone());
-			if (master != null) {
+			StaffMaster staffEntity = staffMasterRepository.findByPhone(dto.getPhone());
+			if (staffEntity != null) {
 				error = ResponseCode.MOBILE_NUMBER_ALREADY_EXISTS;
 				throw new CloudBaseException(error);
-			} else {
-				StaffMaster entity = new StaffMaster();
-				PrefixGenerator prefix = prefixGeneratorRepository.findByBranchCodeAndCompanyCodeAndPrefixCode(branch,
-						company, "STAFF");
-				if (prefix != null) {
-					entity.setStaffCode(
-							prefix.getPrefix() + "-" + String.format("%03d", prefix.getLastGenerated() + 1));
-					prefix.setLastGenerated(prefix.getLastGenerated() + 1);
-					prefixGeneratorRepository.save(prefix);
-				}
-				entity.setAddress(dto.getAddress());
-				entity.setStaffName(dto.getStaffName());
-				entity.setGender(dto.getGender());
-				if (dto.getIsPT()) {
-					entity.setIsPT(dto.getIsPT());
-				}
-				entity.setGmail(dto.getGmail());
-				entity.setPhone(dto.getPhone());
-				entity.setStaffType("STAFF");
-				entity.setUserType(dto.getUserType());
-				entity.setProfilePic(dto.getProfilePic());
-				entity.setShift(dto.getShift());
-				entity.setIsActive(true);
-				entity.setBranchCode(branch);
-				entity.setCompanyCode(company);
-				entity.setCreatedBy(username);
-
-				staffMasterRepository.save(entity);
-
-				RoleMapping role = new RoleMapping();
-				role.setRoleCode("STAFF_USER");
-				role.setUserCode(entity.getStaffCode());
-				role.setBranchCode(branch);
-				role.setCompanyCode(company);
-				role.setCreatedBy(username);
-
-				roleMappingRepository.save(role);
-
-				StaffMasterDTO staffMasterDTO = new StaffMasterDTO();
-				BeanUtils.copyProperties(entity, staffMasterDTO);
-				return ResponseObject.success(staffMasterDTO);
+			} 
+			
+			CustomerMaster customerMaster = customerMasterRepository.findByPhoneNumber(dto.getPhone());
+			if (customerMaster != null) {
+				error = ResponseCode.MOBILE_NUMBER_ALREADY_EXISTS;
+				throw new CloudBaseException(error);
 			}
+			
+			staffEntity = new StaffMaster();
+			PrefixGenerator prefix = prefixGeneratorRepository.findByBranchCodeAndCompanyCodeAndPrefixCode(branch,
+					company, "STAFF");
+			if (prefix != null) {
+				staffEntity.setStaffCode(
+						prefix.getPrefix() + "-" + String.format("%03d", prefix.getLastGenerated() + 1));
+				prefix.setLastGenerated(prefix.getLastGenerated() + 1);
+				prefixGeneratorRepository.save(prefix);
+			}
+			staffEntity.setAddress(dto.getAddress());
+			staffEntity.setStaffName(dto.getStaffName());
+			staffEntity.setGender(dto.getGender());
+			if (dto.getIsPT()) {
+				staffEntity.setIsPT(dto.getIsPT());
+			}
+			staffEntity.setGmail(dto.getGmail());
+			staffEntity.setPhone(dto.getPhone());
+			staffEntity.setStaffType("STAFF");
+			staffEntity.setUserType(dto.getUserType());
+			staffEntity.setProfilePic(dto.getProfilePic());
+			staffEntity.setShift(dto.getShift());
+			staffEntity.setIsActive(true);
+			staffEntity.setBranchCode(branch);
+			staffEntity.setCompanyCode(company);
+			staffEntity.setCreatedBy(username);
+
+			staffMasterRepository.save(staffEntity);
+
+			RoleMapping role = new RoleMapping();
+			role.setRoleCode("STAFF_USER");
+			role.setUserCode(staffEntity.getStaffCode());
+			role.setBranchCode(branch);
+			role.setCompanyCode(company);
+			role.setCreatedBy(username);
+
+			roleMappingRepository.save(role);
+
+			StaffMasterDTO staffMasterDTO = new StaffMasterDTO();
+			BeanUtils.copyProperties(staffEntity, staffMasterDTO);
+			return ResponseObject.success(staffMasterDTO);
+		
 		} catch (CloudBaseException e) {
 			e.printStackTrace();
 			throw e;

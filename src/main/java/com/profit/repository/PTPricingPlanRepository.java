@@ -12,5 +12,7 @@ import com.profit.datamodel.PTPricingPlans;
 public interface PTPricingPlanRepository extends JpaRepository<PTPricingPlans, Long>, JpaSpecificationExecutor<PTPricingPlans>{
 
 	List<PTPricingPlans> findAllByCompanyCodeAndBranchCode(String company, String branch);
+
+	List<PTPricingPlans> findByStaffCodeAndCompanyCodeAndBranchCode(String staffCode, String company, String branch);
 	
 }

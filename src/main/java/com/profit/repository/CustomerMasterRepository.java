@@ -1,5 +1,6 @@
 package com.profit.repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -26,9 +27,18 @@ public interface CustomerMasterRepository extends JpaRepository<CustomerMaster,L
 	@Query(value = "UPDATE customer_master SET is_active = false, last_modified_by = :userName WHERE customer_code = :userCode", nativeQuery = true)
 	void updateCustomer(@Param("userCode") String userCode, @Param("userName") String username);
 
-	@Query(value = "SELECT * from customer_master WHERE is_active = true", nativeQuery = true)
-	List<CustomerMaster> findAllByIsActive();
+	@Query(value = "SELECT customer_code  from customer_master WHERE is_active = true\r\n"
+			+ "AND end_date_of_plan < CURRENT_DATE()", nativeQuery = true)
+	List<String> getRecordsByEndDateOfPlan();
+	
+	@Query(value = "SELECT customer_code from customer_master WHERE is_active = true\r\n"
+			+ "AND pt_end_date_of_plan < CURRENT_DATE()\r\n"
+			+ "OR pt_end_date_of_plan is NULL", nativeQuery = true)
+	List<String> getRecordsByPTEndOfPlan();
 
 	Optional<CustomerMaster> findByCustomerCode(String customerCode);
+
+	@Query(value = "SELECT * from customer_master WHERE is_active = true AND has_pt = true", nativeQuery = true)
+	Collection<CustomerMaster> findAllByIsActiveAndHasPt();
 
 }

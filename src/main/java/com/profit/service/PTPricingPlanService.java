@@ -34,6 +34,20 @@ public class PTPricingPlanService {
 		
 		return ResponseObject.success(dtoList);
 	}
+	
+	public ResponseObject<?> getStaffPlans(String staffCode, String branch, String company) {
+		List<PTPricingPlans> ptPricingPlans = ptPricingPlanRepository.findByStaffCodeAndCompanyCodeAndBranchCode(staffCode, company, branch);
+		List<PTPricingPlanDTO> dtoList = new ArrayList<>();
+		
+		for(PTPricingPlans entity : ptPricingPlans) {
+			PTPricingPlanDTO dto = new PTPricingPlanDTO();
+			BeanUtils.copyProperties(entity, dto);
+			dtoList.add(dto);
+		}
+		
+		return ResponseObject.success(dtoList);
+		
+	}
 
 	@Transactional
 	public ResponseObject<PTPricingPlanDTO> savePlan(PTPricingPlanDTO dto, String company, String branch,

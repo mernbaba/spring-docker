@@ -1,5 +1,7 @@
 package com.profit.exception.handler;
 
+import org.hibernate.exception.ConstraintViolationException;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ControllerAdvice;
@@ -19,5 +21,20 @@ public class FitmarkExceptionHandler {
 		response.setStatusFromEnum(ResponseCode.valueOf(exception.getMessage()));
 		return new ResponseEntity<>(response, HttpStatus.INTERNAL_SERVER_ERROR);
 	}
+	
+	@ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ResponseObject<String>> handleSQLIntegrityConstraintViolationException(
+    		ConstraintViolationException ex) {
+        ResponseObject<String> response = new ResponseObject<>();
+        response.setStatusFromEnum(ResponseCode.DUPLICATE_ENTRY);
+        return new ResponseEntity<>(response, HttpStatus.ALREADY_REPORTED);
+    }
+    @ExceptionHandler(DataIntegrityViolationException.class)
+    public ResponseEntity<ResponseObject<String>> handleDataIntegrityViolationException(
+    		DataIntegrityViolationException ex) {
+        ResponseObject<String> response = new ResponseObject<>();
+        response.setStatusFromEnum(ResponseCode.DUPLICATE_ENTRY);
+        return new ResponseEntity<>(response, HttpStatus.ALREADY_REPORTED);
+    }
 
 }

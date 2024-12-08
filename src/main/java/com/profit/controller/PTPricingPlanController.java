@@ -9,6 +9,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.profit.configuration.JwtTokenUtil;
@@ -43,6 +44,18 @@ public class PTPricingPlanController {
 		
 		return ptPricingPlanService.getAllPlans(company, branch);
 		
+	}
+	
+	@GetMapping("/getByStaff")
+	public ResponseObject<?> getPricingPlansForStaff(@RequestParam String staffCode){
+		String token = request.getHeader("Authorization");
+		token = StringUtils.replace(token, "Bearer ", "");
+		
+		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
+		String company = (String) claims.get("company");
+		String branch = (String) claims.get("branch");
+		
+		return ptPricingPlanService.getStaffPlans(staffCode, branch, company);
 	}
 	
 	@PostMapping("/save")
