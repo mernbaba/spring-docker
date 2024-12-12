@@ -3,8 +3,10 @@ package com.profit.service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.springframework.beans.BeanUtils;
@@ -120,19 +122,48 @@ public class CustomerPaymentSummaryService {
 			entity.setBranchCode(branch);
 			entity.setCreatedBy(username);
 
-			CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
+			Long id = customerPaymentSummaryRepository.save(entity).getId();
+			//
+			List<CustomerPaymentSummary> summaryList = customerPaymentSummaryRepository
+					.getLatestSummaryOfCustomer(entity.getCustomerCode(), LocalDate.now());
+			if (summaryList.size() > 0 && !summaryList.isEmpty()) {
 
-			if (dto.getPlanStartDate().isAfter(customerMaster.getEndDateOfPlan())) {
+				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+				if (master.isPresent()) {
+					CustomerMaster cust = master.get();
 
-				customerMaster.setStartDateOfPlan(dto.getPlanStartDate());
-				customerMaster.setEndDateOfPlan(dto.getPlanEndDate());
-				customerMaster.setLastModifiedBy(username);
+					if (summaryList.size() > 1) {
+						CustomerPaymentSummary summ = summaryList.stream()
+								.max(Comparator.comparingLong(CustomerPaymentSummary::getId)).get();
 
-				customerMasterRepository.save(customerMaster);
+						cust.setStartDateOfPlan(summ.getPlanStartDate());
+						cust.setEndDateOfPlan(summ.getPlanEndDate());
+						cust.setPaymentPlan(summ.getPaymentPlan());
+
+					} else {
+						cust.setStartDateOfPlan(summaryList.get(0).getPlanStartDate());
+						cust.setEndDateOfPlan(summaryList.get(0).getPlanEndDate());
+						cust.setPaymentPlan(summaryList.get(0).getPaymentPlan());
+					}
+					customerMasterRepository.save(cust);
+
+				}
 
 			}
 
-			Long id = customerPaymentSummaryRepository.save(entity).getId();
+			/*CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
+			
+			if (dto.getPlanStartDate().isAfter(customerMaster.getEndDateOfPlan())) {
+			
+				customerMaster.setStartDateOfPlan(dto.getPlanStartDate());
+				customerMaster.setEndDateOfPlan(dto.getPlanEndDate());
+				customerMaster.setLastModifiedBy(username);
+			
+				customerMasterRepository.save(customerMaster);
+			
+			}*/
+
+		
 
 			List<CustomerPaymentDetails> detailtsEntityList = new ArrayList<CustomerPaymentDetails>();
 			if (dto.getCustomerPaymentDetails() != null && dto.getCustomerPaymentDetails().size() > 0) {
@@ -172,6 +203,45 @@ public class CustomerPaymentSummaryService {
 			entity.setLastModifiedBy(username);
 
 			Long id = customerPaymentSummaryRepository.save(entity).getId();
+
+			//
+			List<CustomerPaymentSummary> summaryList = customerPaymentSummaryRepository
+					.getLatestSummaryOfCustomer(entity.getCustomerCode(), LocalDate.now());
+			if (summaryList.size() > 0 && !summaryList.isEmpty()) {
+
+				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+				if (master.isPresent()) {
+					CustomerMaster cust = master.get();
+
+					if (summaryList.size() > 1) {
+						CustomerPaymentSummary summ = summaryList.stream()
+								.max(Comparator.comparingLong(CustomerPaymentSummary::getId)).get();
+
+						cust.setStartDateOfPlan(summ.getPlanStartDate());
+						cust.setEndDateOfPlan(summ.getPlanEndDate());
+						cust.setPaymentPlan(summ.getPaymentPlan());
+
+					} else {
+						cust.setStartDateOfPlan(summaryList.get(0).getPlanStartDate());
+						cust.setEndDateOfPlan(summaryList.get(0).getPlanEndDate());
+						cust.setPaymentPlan(summaryList.get(0).getPaymentPlan());
+					}
+					customerMasterRepository.save(cust);
+
+				}
+
+			}
+
+//			entity = customerPaymentSummaryRepository.getLatestRecordOfCustomer(entity.getCustomerCode());
+//			if (entity != null && ObjectUtils.isNotEmpty(entity)) {
+//				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+//				if (master.isPresent()) {
+//					CustomerMaster cust = master.get();
+//					cust.setStartDateOfPlan(entity.getPlanStartDate());
+//					cust.setEndDateOfPlan(entity.getPlanEndDate());
+//					cust.setPaymentPlan(entity.getPaymentPlan());
+//				}
+//			}
 
 			List<CustomerPaymentDetails> detailtsEntityList = new ArrayList<CustomerPaymentDetails>();
 			if (dto.getCustomerPaymentDetails() != null) {

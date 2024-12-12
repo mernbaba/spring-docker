@@ -1,5 +1,6 @@
 package com.profit.service;
 
+import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
@@ -135,6 +136,7 @@ public class CustomerMasterService {
 			customerEntity.setBranchCode(branch);
 			customerEntity.setCompanyCode(company);
 			customerEntity.setCreatedBy(username);
+			customerEntity.setCreatedDate(LocalDate.now());
 
 			customerMasterRepository.save(customerEntity);
 			

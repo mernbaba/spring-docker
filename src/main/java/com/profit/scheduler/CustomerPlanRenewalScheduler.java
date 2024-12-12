@@ -26,7 +26,7 @@ public class CustomerPlanRenewalScheduler {
 	@Autowired
 	CustomerPaymentSummaryRepository customerPaymentSummaryRepository;
 
-	@Scheduled(cron = "0 0 18 * * ?")
+	@Scheduled(cron = "0 1 0 * * ?")
 //	@Scheduled(cron = "0 2 * * * ?")
 	public synchronized void checkAllCustomersPlanRenewals() {
 		

@@ -3,8 +3,10 @@ package com.profit.service;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 import org.apache.commons.lang3.StringUtils;
@@ -104,11 +106,40 @@ public class PTPaymentSummaryService {
 			entity.setBranchCode(branch);
 			entity.setCreatedBy(username);
 
-			CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
+			Long id = ptPaymentSummaryRepository.save(entity).getId();
 
+			//
+			List<PTPaymentSummary> ptList = ptPaymentSummaryRepository
+					.getLatestPtSummaryOfCustomer(entity.getCustomerCode(), LocalDate.now());
+			if (ptList.size() > 0 && !ptList.isEmpty()) {
+
+				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+				if (master.isPresent()) {
+					CustomerMaster cust = master.get();
+
+					if (ptList.size() > 1) {
+						PTPaymentSummary summ = ptList.stream().max(Comparator.comparingLong(PTPaymentSummary::getId))
+								.get();
+
+						cust.setPtStartDateOfPlan(summ.getPtStartDateOfPlan());
+						cust.setPtEndDateOfPlan(summ.getPtEndDateOfPlan());
+						cust.setPtPaymentPlan(summ.getPtPaymentPlan());
+
+					} else {
+						cust.setPtStartDateOfPlan(ptList.get(0).getPtStartDateOfPlan());
+						cust.setPtEndDateOfPlan(ptList.get(0).getPtEndDateOfPlan());
+						cust.setPtPaymentPlan(ptList.get(0).getPtPaymentPlan());
+					}
+					customerMasterRepository.save(cust);
+
+				}
+
+			}
+			/*CustomerMaster customerMaster = customerMasterRepository.findByCustomerCode(dto.getCustomerCode()).get();
+			
 			if (customerMaster.getPtEndDateOfPlan() == null
 					|| dto.getPtStartDateOfPlan().isAfter(customerMaster.getPtEndDateOfPlan())) {
-
+			
 				customerMaster.setHasPT(true);
 				customerMaster.setStaffCode(dto.getStaffCode());
 				customerMaster.setStaffName(dto.getStaffName());
@@ -116,12 +147,10 @@ public class PTPaymentSummaryService {
 				customerMaster.setPtEndDateOfPlan(dto.getPtEndDateOfPlan());
 				customerMaster.setPtPaymentPlan(dto.getPtPaymentPlan());
 				customerMaster.setLastModifiedBy(username);
-
+			
 				customerMasterRepository.save(customerMaster);
-
-			}
-
-			Long id = ptPaymentSummaryRepository.save(entity).getId();
+			
+			}*/
 
 			List<PTPaymentDetails> detailtsEntityList = new ArrayList<>();
 			if (dto.getPtPaymentDetails() != null && !dto.getPtPaymentDetails().isEmpty()) {
@@ -141,7 +170,6 @@ public class PTPaymentSummaryService {
 			return ResponseObject.success(responseDTO);
 
 		} catch (Exception e) {
-			// TODO: handle exception
 			e.printStackTrace();
 			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
 		}
@@ -162,6 +190,46 @@ public class PTPaymentSummaryService {
 			entity.setLastModifiedBy(username);
 
 			Long id = ptPaymentSummaryRepository.save(entity).getId();
+
+			//
+			List<PTPaymentSummary> ptList = ptPaymentSummaryRepository
+					.getLatestPtSummaryOfCustomer(entity.getCustomerCode(), LocalDate.now());
+			if (ptList.size() > 0 && !ptList.isEmpty()) {
+
+				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+				if (master.isPresent()) {
+					CustomerMaster cust = master.get();
+
+					if (ptList.size() > 1) {
+						PTPaymentSummary summ = ptList.stream().max(Comparator.comparingLong(PTPaymentSummary::getId))
+								.get();
+
+						cust.setPtStartDateOfPlan(summ.getPtStartDateOfPlan());
+						cust.setPtEndDateOfPlan(summ.getPtEndDateOfPlan());
+						cust.setPtPaymentPlan(summ.getPtPaymentPlan());
+
+					} else {
+						cust.setPtStartDateOfPlan(ptList.get(0).getPtStartDateOfPlan());
+						cust.setPtEndDateOfPlan(ptList.get(0).getPtEndDateOfPlan());
+						cust.setPtPaymentPlan(ptList.get(0).getPtPaymentPlan());
+					}
+					customerMasterRepository.save(cust);
+
+				}
+
+			}
+
+			/*entity = ptPaymentSummaryRepository.getLatestRecordOfCustomer(entity.getCustomerCode());
+			
+			if (entity != null && ObjectUtils.isNotEmpty(entity)) {
+				Optional<CustomerMaster> master = customerMasterRepository.findByCustomerCode(entity.getCustomerCode());
+				if (master.isPresent()) {
+					CustomerMaster cust = master.get();
+					cust.setPtStartDateOfPlan(entity.getPtStartDateOfPlan());
+					cust.setPtEndDateOfPlan(entity.getPtEndDateOfPlan());
+					cust.setPtPaymentPlan(entity.getPtPaymentPlan());
+				}
+			}*/
 
 			List<PTPaymentDetails> detailsEntityList = new ArrayList<>();
 			if (dto.getPtPaymentDetails() != null) {

@@ -26,7 +26,7 @@ public class PTPaymentPlanRenewalSchedular {
 	@Autowired
 	PTPaymentSummaryRepository ptPaymentSummaryRepository;
 
-	@Scheduled(cron = "0 30 18 * * ?")
+	@Scheduled(cron = "0 1 0 * * ?")
 //		@Scheduled(cron = "0 */2 * * * ?")
 	public synchronized void checkAllCustomersPtPlanRenewals() {
 
