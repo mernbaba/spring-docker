@@ -385,74 +385,71 @@ public class SecUserService {
 			Messages msg = new Messages();
 
 			SecUser secUser = secUserRepository.findByEmail(email);
-			String userName = null;
-
-			// if user already exist going forward for generating otp
-			if (secUser != null && ObjectUtils.isNotEmpty(secUser)) {
-
-				if (secUser.getUserType().equalsIgnoreCase("CUSTOMER")) {
-					userName = customerMasterRepository.findByPhoneNumber(secUser.getPhoneNumber()).getCustomerName();
-				} else if (secUser.getUserType().equalsIgnoreCase("STAFF")) {
-					userName = staffMasterRepository.findByPhone(secUser.getPhoneNumber()).getStaffName();
-				}
-
-				// taking random 6 char
-				String OTP = otpService.generateOTP();
-				MimeMessage message = mailSender.createMimeMessage();
-				MimeMessageHelper helper = new MimeMessageHelper(message);
-				helper.setFrom(sender);
-
-				String subject = "Here's your One Time Password (OTP) - Expire in 10 minute!";
-
-				String content = "Hello " + userName + "." + "<br>"
-						+ "For security reason, you're required to use the following " + "One Time Password to login:"
-						+ "<br><b>" + OTP + "</br>" + "<br>" + "Note: this OTP is set to expire in 10 minute.";
-
-				String mesgss = "Hello " + userName + "." + "\n"
-						+ "For security reason, you're required to use the following " + "One Time Password to login:"
-						+ "\n\n" + OTP + "\n" + "\n" + "Note: this OTP is set to expire in 10 minute.";
-
-				// 10 min added
-				Calendar cal = Calendar.getInstance();
-				cal.add(Calendar.MINUTE, +10);
-
-				// setting the values
-				otpEntity.setPartyCode(secUser.getUserName());
-				otpEntity.setPartyType(secUser.getUserType());
-				otpEntity.setActivity("PASSWORD_AUTH");
-				otpEntity.setActivityId(secUser.getId());
-				otpEntity.setOtp(OTP);
-				otpEntity.setOtpGentime(new Date());
-				otpEntity.setOtpExptime(cal.getTime());
-				otpEntity.setOtpStatus("GENERATED");
-				otpEntity.setAppName("Teja");
-				otpEntity.setCompanyCode(secUser.getCompanyCode());
-				otpEntity.setCreatedby(secUser.getUserName());
-				otpEntity.setCreateddate(new Date());
-
-				// setting the values
-				msg.setMessageDate(new Date());
-				msg.setPartyCode(secUser.getUserName());
-				msg.setPartyType(secUser.getUserType());
-				msg.setMessageType("PASSWORD_AUTH");
-				msg.setOtp(OTP);
-				msg.setMessage(mesgss);
-				msg.setCompanyCode(secUser.getCompanyCode());
-
-				helper.setSubject(subject);
-
-				helper.setText(content, true);
-				helper.setTo(email);
-
-				otpRepository.save(otpEntity);
-				messagesRepository.save(msg);
-				// send mail
-				mailSender.send(message);
-
-				return ResponseObject.success(ResponseCode.OTP_SENT_TO_YOUR_EMAIL);
-			} else {
+			if (secUser == null) {
 				throw new CloudBaseException(ResponseCode.USER_NOT_FOUND);
 			}
+			String userName = null;
+
+			if (secUser.getUserType().equalsIgnoreCase("CUSTOMER")) {
+				userName = customerMasterRepository.findByPhoneNumber(secUser.getPhoneNumber()).getCustomerName();
+			} else if (secUser.getUserType().equalsIgnoreCase("STAFF")) {
+				userName = staffMasterRepository.findByPhone(secUser.getPhoneNumber()).getStaffName();
+			}
+
+			// taking random 6 char
+			String OTP = otpService.generateOTP();
+			MimeMessage message = mailSender.createMimeMessage();
+			MimeMessageHelper helper = new MimeMessageHelper(message);
+			helper.setFrom(sender);
+
+			String subject = "Here's your One Time Password (OTP) - Expire in 10 minute!";
+
+			String content = "Hello " + userName + "." + "<br>"
+					+ "For security reason, you're required to use the following " + "One Time Password to login:"
+					+ "<br><b>" + OTP + "</br>" + "<br>" + "Note: this OTP is set to expire in 10 minute.";
+
+			String mesgss = "Hello " + userName + "." + "\n"
+					+ "For security reason, you're required to use the following " + "One Time Password to login:"
+					+ "\n\n" + OTP + "\n" + "\n" + "Note: this OTP is set to expire in 10 minute.";
+
+			// 10 min added
+			Calendar cal = Calendar.getInstance();
+			cal.add(Calendar.MINUTE, +10);
+
+			// setting the values
+			otpEntity.setPartyCode(secUser.getUserName());
+			otpEntity.setPartyType(secUser.getUserType());
+			otpEntity.setActivity("PASSWORD_AUTH");
+			otpEntity.setActivityId(secUser.getId());
+			otpEntity.setOtp(OTP);
+			otpEntity.setOtpGentime(new Date());
+			otpEntity.setOtpExptime(cal.getTime());
+			otpEntity.setOtpStatus("GENERATED");
+			otpEntity.setAppName("Teja");
+			otpEntity.setCompanyCode(secUser.getCompanyCode());
+			otpEntity.setCreatedby(secUser.getUserName());
+			otpEntity.setCreateddate(new Date());
+
+			// setting the values
+			msg.setMessageDate(new Date());
+			msg.setPartyCode(secUser.getUserName());
+			msg.setPartyType(secUser.getUserType());
+			msg.setMessageType("PASSWORD_AUTH");
+			msg.setOtp(OTP);
+			msg.setMessage(mesgss);
+			msg.setCompanyCode(secUser.getCompanyCode());
+
+			helper.setSubject(subject);
+
+			helper.setText(content, true);
+			helper.setTo(email);
+
+			otpRepository.save(otpEntity);
+			messagesRepository.save(msg);
+			// send mail
+			mailSender.send(message);
+
+			return ResponseObject.success(ResponseCode.OTP_SENT_TO_YOUR_EMAIL);
 
 		} catch (Exception e) {
 			throw new CloudBaseException(ResponseCode.USER_NOT_FOUND);

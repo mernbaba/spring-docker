@@ -43,5 +43,9 @@ public interface CustomerPaymentSummaryRepository
 	@Query(value = "SELECT *  FROM tb_customer_payment_summary WHERE customer_code =:customerCode AND (plan_start_date =:localDate OR plan_end_date=:localDate OR (:localDate BETWEEN plan_start_date AND plan_end_date))", nativeQuery = true)
 	List<CustomerPaymentSummary> getLatestSummaryOfCustomer(@Param("customerCode") String customerCode,
 			LocalDate localDate);
+	
+	@Query(value = "SELECT *  FROM tb_customer_payment_summary WHERE customer_code IN :customerCodes AND (plan_start_date =:localDate OR plan_end_date=:localDate OR (:localDate BETWEEN plan_start_date AND plan_end_date))", nativeQuery = true)
+	List<CustomerPaymentSummary> getLatestSummaryRecordsOfCustomers(@Param("customerCodes") List<String> customerCodes,
+			LocalDate localDate);
 
 }

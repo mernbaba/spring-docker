@@ -40,4 +40,11 @@ public interface PTPaymentSummaryRepository
 	@Query(value = "SELECT *  FROM tb_pt_payment_summary WHERE customer_code =:customerCode AND (pt_start_date_of_plan =:localDate OR pt_end_date_of_plan=:localDate OR (:localDate BETWEEN pt_start_date_of_plan AND pt_end_date_of_plan))", nativeQuery = true)
 	List<PTPaymentSummary> getLatestPtSummaryOfCustomer(@Param("customerCode") String customerCode,
 			LocalDate localDate);
+	
+	@Query(value = "SELECT *  FROM tb_pt_payment_summary WHERE customer_code IN :customerCodes "
+			+ "AND (pt_start_date_of_plan =:localDate "
+			+ "OR pt_end_date_of_plan=:localDate "
+			+ "OR (:localDate BETWEEN pt_start_date_of_plan AND pt_end_date_of_plan))", nativeQuery = true)
+	List<PTPaymentSummary> getLatestPtSummaryRecordsOfCustomers(@Param("customerCodes") List<String> customerCodes,
+			LocalDate localDate);
 }

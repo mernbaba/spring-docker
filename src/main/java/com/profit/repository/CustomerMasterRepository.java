@@ -1,5 +1,6 @@
 package com.profit.repository;
 
+import java.time.LocalDate;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -28,13 +29,13 @@ public interface CustomerMasterRepository extends JpaRepository<CustomerMaster,L
 	void updateCustomer(@Param("userCode") String userCode, @Param("userName") String username);
 
 	@Query(value = "SELECT customer_code  from customer_master WHERE is_active = true\r\n"
-			+ "AND end_date_of_plan < CURRENT_DATE()", nativeQuery = true)
-	List<String> getRecordsByEndDateOfPlan();
+			+ "AND end_date_of_plan < :currentDate", nativeQuery = true)
+	List<String> getRecordsByEndDateOfPlan(@Param("currentDate") LocalDate currentDate);
 	
 	@Query(value = "SELECT customer_code from customer_master WHERE is_active = true\r\n"
-			+ "AND pt_end_date_of_plan < CURRENT_DATE()\r\n"
+			+ "AND pt_end_date_of_plan < :currentDate\r\n"
 			+ "OR pt_end_date_of_plan is NULL", nativeQuery = true)
-	List<String> getRecordsByPTEndOfPlan();
+	List<String> getRecordsByPTEndOfPlan(@Param("currentDate") LocalDate currentDate);
 
 	Optional<CustomerMaster> findByCustomerCode(String customerCode);
 
