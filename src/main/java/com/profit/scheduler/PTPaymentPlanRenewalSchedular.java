@@ -28,37 +28,36 @@ public class PTPaymentPlanRenewalSchedular {
 	@Autowired
 	PTPaymentSummaryRepository ptPaymentSummaryRepository;
 
-//	@Scheduled(cron = "0 1 0 * * ?")
+//	@Scheduled(cron = "0 */2 * * * ?")
 	@Scheduled(cron = "0 0 */2 * * ?")
 	public synchronized void checkAllCustomersPtPlanRenewals() {
 
 		System.err.println("Running PT Payment Summary schedular........");
 
 		try {
-//			List<String> customerCodes = customerMasterRepository.getRecordsByPTEndOfPlan(currentDate);
-//
-//			List<PTPaymentSummary> latestValidRecords = ptPaymentSummaryRepository
-//					.findByCustomerCode(customerCodes).stream()
-//					.collect(Collectors.groupingBy(PTPaymentSummary::getCustomerCode)).values().stream()
-//					.map(group -> group.stream().max(Comparator.comparing(PTPaymentSummary::getPtStartDateOfPlan))
-//							.orElse(null))
-//					.filter(record -> record != null && (record.getPtStartDateOfPlan().isAfter(LocalDate.now())
-//							|| record.getPtStartDateOfPlan().isEqual(LocalDate.now())))
-//					.collect(Collectors.toList());
-//
-//			updateLatestPtDatesInCustomerData(latestValidRecords);
 			List<CustomerMaster> customerMasterList = customerMasterRepository.findAll();
-			
-			List<String> customerCodes = customerMasterList.stream()
-				    .map(CustomerMaster::getCustomerCode)
-				    .collect(Collectors.toList());
+//			List<CustomerMaster> customerMasterList = customerMasterRepository
+//					.findAllByCompanyCodeAndBranchCode("COMP-21", "BRNC-21");
+
+			List<String> customerCodes = customerMasterList.stream().map(CustomerMaster::getCustomerCode)
+					.collect(Collectors.toList());
 
 			List<PTPaymentSummary> ptSummeryList = ptPaymentSummaryRepository
 					.getLatestPtSummaryRecordsOfCustomers(customerCodes, LocalDate.now());
 
-			if (!ptSummeryList.isEmpty()) {
-				updateLatestPtDatesInCustomerData(ptSummeryList);
+			for (String code : customerCodes) {
+
+				List<PTPaymentSummary> newList = ptSummeryList.stream().filter(pt -> pt.getCustomerCode().equals(code))
+						.toList();
+				if (!newList.isEmpty()) {
+					updateLatestPtDatesInCustomerData(newList, code);
+				}
+
 			}
+
+//			if (!ptSummeryList.isEmpty()) {
+////				updateLatestPtDatesInCustomerData(ptSummeryList);
+//			}
 
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -67,37 +66,44 @@ public class PTPaymentPlanRenewalSchedular {
 	}
 
 	@Transactional
-	private void updateLatestPtDatesInCustomerData(List<PTPaymentSummary> ptSummaryList) {
+	private void updateLatestPtDatesInCustomerData(List<PTPaymentSummary> ptSummaryList, String custCode) {
 
 		if (ptSummaryList != null) {
-			for (PTPaymentSummary ptRecord : ptSummaryList) {
-				Optional<CustomerMaster> customerOptional = customerMasterRepository
-						.findByCustomerCode(ptRecord.getCustomerCode());
+			Optional<CustomerMaster> customerOptional = customerMasterRepository.findByCustomerCode(custCode);
 
-				if (customerOptional.isPresent()) {
+			if (customerOptional.isPresent()) {
 
-					CustomerMaster customer = customerOptional.get();
-					
-					if (ptSummaryList.size() > 1) {
-						PTPaymentSummary summ = ptSummaryList.stream().max(Comparator.comparingLong(PTPaymentSummary::getId))
-								.get();
+				CustomerMaster customer = customerOptional.get();
+
+				if (ptSummaryList.size() > 1) {
+					PTPaymentSummary summ = ptSummaryList.stream()
+							.max(Comparator.comparingLong(PTPaymentSummary::getId)).get();
+					if (!summ.getPtStartDateOfPlan().equals(customer.getPtStartDateOfPlan())
+							|| !summ.getPtEndDateOfPlan().equals(customer.getPtEndDateOfPlan())) {
 						customer.setHasPT(true);
 						customer.setStaffCode(summ.getStaffCode());
 						customer.setStaffName(summ.getStaffName());
 						customer.setPtStartDateOfPlan(summ.getPtStartDateOfPlan());
 						customer.setPtEndDateOfPlan(summ.getPtEndDateOfPlan());
 						customer.setPtPaymentPlan(summ.getPtPaymentPlan());
-					}else {
-						customer.setHasPT(true);
-						customer.setStaffCode(ptRecord.getStaffCode());
-						customer.setStaffName(ptRecord.getStaffName());
-						customer.setPtStartDateOfPlan(ptRecord.getPtStartDateOfPlan());
-						customer.setPtEndDateOfPlan(ptRecord.getPtEndDateOfPlan());
-						customer.setPtPaymentPlan(ptRecord.getPtPaymentPlan());
+						customer.setLastModifiedBy("schedular");
+						customerMasterRepository.save(customer);
 					}
 
-					customerMasterRepository.save(customer);
+				} else {
+					if (!ptSummaryList.get(0).getPtStartDateOfPlan().equals(customer.getPtStartDateOfPlan())
+							|| !ptSummaryList.get(0).getPtEndDateOfPlan().equals(customer.getPtEndDateOfPlan())) {
+						customer.setHasPT(true);
+						customer.setStaffCode(ptSummaryList.get(0).getStaffCode());
+						customer.setStaffName(ptSummaryList.get(0).getStaffName());
+						customer.setPtStartDateOfPlan(ptSummaryList.get(0).getPtStartDateOfPlan());
+						customer.setPtEndDateOfPlan(ptSummaryList.get(0).getPtEndDateOfPlan());
+						customer.setPtPaymentPlan(ptSummaryList.get(0).getPtPaymentPlan());
+						customer.setLastModifiedBy("schedular");
+						customerMasterRepository.save(customer);
+					}
 				}
+
 			}
 		}
 	}
