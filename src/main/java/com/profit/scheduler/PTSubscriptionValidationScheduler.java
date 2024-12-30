@@ -11,38 +11,43 @@ import org.springframework.stereotype.Component;
 import com.profit.datamodel.CustomerMaster;
 import com.profit.repository.CustomerMasterRepository;
 
+import jakarta.transaction.Transactional;
+
 @Component
 public class PTSubscriptionValidationScheduler {
-	
+
 	@Autowired
 	CustomerMasterRepository customerMasterRepository;
-	
-//	@Scheduled(cron = "0 30 17 * * ?")
-	public synchronized void checkAllCustomersPtPlans() { 
-		
-		System.err.println("Checking if customers has active PT plan........");
-		
+
+	@Scheduled(cron = "0 30 0 * * ?")
+	@Transactional
+	public synchronized void checkAllCustomersPtPlans() {
+
+		System.err.println("Validating if customer has active PT plan........");
+
 		try {
-			
-			List<CustomerMaster> customerMasterList = customerMasterRepository.findAllByIsActiveAndHasPt().stream()
-					.filter(customer -> customer.getPtEndDateOfPlan() != null
-							&& customer.getPtEndDateOfPlan().isBefore(LocalDate.now())).collect(Collectors.toList());
-			
-			for(CustomerMaster master : customerMasterList) {
-				master.setHasPT(false);
-				master.setStaffCode(null);
-				master.setStaffName(null);
-				master.setPtStartDateOfPlan(null);
-				master.setPtEndDateOfPlan(null);
+
+			List<CustomerMaster> customerMasterList = customerMasterRepository
+					.findAllByIsActiveAndHasPtAndPtEndDate(LocalDate.now());
+
+			if (!customerMasterList.isEmpty()) {
+				for (CustomerMaster master : customerMasterList) {
+
+					master.setHasPT(false);
+					master.setStaffCode(null);
+					master.setStaffName(null);
+					master.setPtPaymentPlan(null);
+					master.setLastModifiedBy("schedular");
+
+					customerMasterRepository.save(master);
+				}
 			}
-			
-		}catch (Exception e) {
+
+		} catch (Exception e) {
 			e.printStackTrace();
 			throw e;
 		}
-		
+
 	}
-	
-	
 
 }

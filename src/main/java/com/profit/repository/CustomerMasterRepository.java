@@ -39,7 +39,10 @@ public interface CustomerMasterRepository extends JpaRepository<CustomerMaster,L
 
 	Optional<CustomerMaster> findByCustomerCode(String customerCode);
 
-	@Query(value = "SELECT * from customer_master WHERE is_active = true AND has_pt = true", nativeQuery = true)
-	Collection<CustomerMaster> findAllByIsActiveAndHasPt();
+	@Query(value = "SELECT * from customer_master cm\r\n"
+			+ "WHERE is_active = true \r\n"
+			+ "AND has_pt = true\r\n"
+			+ "AND pt_end_date_of_plan < :currentDate", nativeQuery = true)
+	List<CustomerMaster> findAllByIsActiveAndHasPtAndPtEndDate(@Param("currentDate") LocalDate currentDate);
 
 }
