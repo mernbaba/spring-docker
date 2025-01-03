@@ -48,4 +48,10 @@ public interface CustomerPaymentSummaryRepository
 	List<CustomerPaymentSummary> getLatestSummaryRecordsOfCustomers(@Param("customerCodes") List<String> customerCodes,
 			LocalDate localDate);
 
+	@Query(value = "SELECT * FROM tb_customer_payment_summary tcps \r\n"
+			+ "WHERE settled = FALSE\r\n"
+			+ "AND company_code = :company\r\n"
+			+ "AND branch_code = :branch", nativeQuery = true)
+	List<CustomerPaymentSummary> getCustomerPendingPayments(@Param("company") String company,@Param("branch") String branch);
+
 }

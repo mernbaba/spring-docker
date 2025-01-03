@@ -259,4 +259,32 @@ public class PTPaymentSummaryService {
 
 	}
 
+	public ResponseObject<List<PTPaymentSummaryDTO>> customerPtPendingPayments(String company, String branch) {
+
+		List<PTPaymentSummary> ptPaymentSummaryList = ptPaymentSummaryRepository.getCustomerPtPendingPayments(company,
+				branch);
+		List<Long> paymentIds = ptPaymentSummaryList.stream().map(PTPaymentSummary::getId).collect(Collectors.toList());
+
+		List<PTPaymentDetails> detailsList = ptPaymentDetailsRepository.getDataBySummaryIds(paymentIds);
+
+		List<PTPaymentSummaryDTO> ptPaymentSummaryListDtoList = new ArrayList<>();
+
+		if (!ptPaymentSummaryList.isEmpty()) {
+			Map<Long, List<PTPaymentDetailsDTO>> ptDetailsMap = detailsList.stream().map(detailsEntity -> {
+				PTPaymentDetailsDTO detailsDto = new PTPaymentDetailsDTO();
+				BeanUtils.copyProperties(detailsEntity, detailsDto);
+				return detailsDto;
+			}).collect(Collectors.groupingBy(PTPaymentDetailsDTO::getPtPaymentSummeryId));
+
+			for (PTPaymentSummary entity : ptPaymentSummaryList) {
+				PTPaymentSummaryDTO dto = new PTPaymentSummaryDTO();
+				BeanUtils.copyProperties(entity, dto);
+				dto.setPtPaymentDetails(ptDetailsMap.getOrDefault(entity.getId(), new ArrayList<>()));
+				ptPaymentSummaryListDtoList.add(dto);
+			}
+		}
+
+		return ResponseObject.success(ptPaymentSummaryListDtoList);
+	}
+
 }

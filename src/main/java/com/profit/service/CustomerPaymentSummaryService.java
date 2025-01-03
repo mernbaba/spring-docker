@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -16,14 +17,20 @@ import org.springframework.stereotype.Service;
 import com.profit.datamodel.CustomerMaster;
 import com.profit.datamodel.CustomerPaymentDetails;
 import com.profit.datamodel.CustomerPaymentSummary;
+import com.profit.datamodel.PTPaymentDetails;
+import com.profit.datamodel.PTPaymentSummary;
 import com.profit.dto.CustomerPaymentDetailsDTO;
 import com.profit.dto.CustomerPaymentSummaryDTO;
+import com.profit.dto.PTPaymentDetailsDTO;
+import com.profit.dto.PTPaymentSummaryDTO;
 import com.profit.dto.ResponseObject;
 import com.profit.enumeration.ResponseCode;
 import com.profit.exceptions.CloudBaseException;
 import com.profit.repository.CustomerMasterRepository;
 import com.profit.repository.CustomerPaymentDetailsRepository;
 import com.profit.repository.CustomerPaymentSummaryRepository;
+import com.profit.repository.PTPaymentDetailsRepository;
+import com.profit.repository.PTPaymentSummaryRepository;
 
 import jakarta.transaction.Transactional;
 
@@ -38,6 +45,10 @@ public class CustomerPaymentSummaryService {
 
 	@Autowired
 	CustomerMasterRepository customerMasterRepository;
+	
+	@Autowired
+	PTPaymentSummaryRepository ptPaymentSummaryRepository;
+	
 
 	public ResponseObject<List<CustomerPaymentSummaryDTO>> getUsers(String fromDate, String toDate, String customerCode,
 			String branch, String company) {
@@ -273,6 +284,34 @@ public class CustomerPaymentSummaryService {
 			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
 		}
 
+	}
+
+	public ResponseObject<List<CustomerPaymentSummaryDTO>> customerPendingPayments(String company, String branch) {
+		
+		List<CustomerPaymentSummary> customerPaymentSummaryList = customerPaymentSummaryRepository.getCustomerPendingPayments(company, branch);
+		List<Long> paymentIds = customerPaymentSummaryList.stream().map(CustomerPaymentSummary::getId)
+				.collect(Collectors.toList());
+		List<CustomerPaymentDetails> detailsList = customerPaymentDetailsRepository.getDataBySummaryIds(paymentIds);
+		
+		List<CustomerPaymentSummaryDTO> customerPaymentSummaryDtoList = new ArrayList<>();
+		
+		
+		if(!customerPaymentSummaryList.isEmpty()) {
+			Map<Long, List<CustomerPaymentDetailsDTO>> custDetailsMap = detailsList.stream().map(detailsEntity -> {
+				CustomerPaymentDetailsDTO detailsDto = new CustomerPaymentDetailsDTO();
+				BeanUtils.copyProperties(detailsEntity, detailsDto);
+				return detailsDto;
+			}).collect(Collectors.groupingBy(CustomerPaymentDetailsDTO::getPaymentSummeryId));
+			
+			for(CustomerPaymentSummary entity : customerPaymentSummaryList) {
+				CustomerPaymentSummaryDTO dto = new CustomerPaymentSummaryDTO();
+				BeanUtils.copyProperties(entity, dto);
+				dto.setCustomerPaymentDetails(custDetailsMap.getOrDefault(entity.getId(), new ArrayList<>()));
+				customerPaymentSummaryDtoList.add(dto);
+			}
+		}
+		
+		return ResponseObject.success(customerPaymentSummaryDtoList);
 	}
 
 }

@@ -1,6 +1,8 @@
 package com.profit.controller;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -16,6 +18,7 @@ import com.profit.configuration.JwtTokenUtil;
 import com.profit.dto.CustomerPaymentSummaryDTO;
 import com.profit.dto.ResponseObject;
 import com.profit.service.CustomerPaymentSummaryService;
+import com.profit.service.PTPaymentSummaryService;
 
 import io.jsonwebtoken.Claims;
 import jakarta.servlet.http.HttpServletRequest;
@@ -31,7 +34,10 @@ public class CustomerPaymentSummeryController {
 	JwtTokenUtil jwtTokenUtil;
 
 	@Autowired
-	CustomerPaymentSummaryService customerPaymentSummeryService;
+	CustomerPaymentSummaryService customerPaymentSummaryService;
+	
+	@Autowired
+	PTPaymentSummaryService ptPaymentSummaryService;
 
 	@GetMapping("/getAllUsers")
 	public ResponseObject<List<CustomerPaymentSummaryDTO>> getAllUsers(@RequestParam String fromDate,
@@ -43,7 +49,7 @@ public class CustomerPaymentSummeryController {
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
 
-		return customerPaymentSummeryService.getUsers(fromDate, toDate, customerCode, branch, company);
+		return customerPaymentSummaryService.getUsers(fromDate, toDate, customerCode, branch, company);
 
 	}
 
@@ -55,7 +61,24 @@ public class CustomerPaymentSummeryController {
 		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
-		return customerPaymentSummeryService.getUserPayments(customerCode, branch, company);
+		return customerPaymentSummaryService.getUserPayments(customerCode, branch, company);
+	}
+	
+	@GetMapping("/dashboardData")
+	public ResponseObject<?> getDashboardData(){
+		Map<String, List<?>> responseMap = new HashMap<>();
+		String token = request.getHeader("Authorization");
+		token = StringUtils.replace(token, "Bearer ", "");
+
+		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
+		String company = (String) claims.get("company");
+		String branch = (String) claims.get("branch");
+		
+		responseMap.put("customerPaymentData", customerPaymentSummaryService.customerPendingPayments(company, branch).getResponse());
+		responseMap.put("ptPaymentData", ptPaymentSummaryService.customerPtPendingPayments(company, branch).getResponse());
+		
+		return ResponseObject.success(responseMap);
+		
 	}
 
 	@PostMapping("/save")
@@ -68,7 +91,7 @@ public class CustomerPaymentSummeryController {
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
 		String username = claims.getSubject();
-		return customerPaymentSummeryService.save(dto, branch, company, username);
+		return customerPaymentSummaryService.save(dto, branch, company, username);
 	}
 
 	@PutMapping("/update")
@@ -81,7 +104,7 @@ public class CustomerPaymentSummeryController {
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
 		String username = claims.getSubject();
-		return customerPaymentSummeryService.update(dto, branch, company, username);
+		return customerPaymentSummaryService.update(dto, branch, company, username);
 	}
 
 }

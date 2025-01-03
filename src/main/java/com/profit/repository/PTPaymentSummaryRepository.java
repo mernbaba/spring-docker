@@ -47,4 +47,10 @@ public interface PTPaymentSummaryRepository
 			+ "OR (:localDate BETWEEN pt_start_date_of_plan AND pt_end_date_of_plan))", nativeQuery = true)
 	List<PTPaymentSummary> getLatestPtSummaryRecordsOfCustomers(@Param("customerCodes") List<String> customerCodes,
 			LocalDate localDate);
+
+	@Query(value = "SELECT * FROM tb_pt_payment_summary tpps \r\n"
+			+ "WHERE settled = FALSE\r\n"
+			+ "AND company_code = :company\r\n"
+			+ "AND branch_code = :branch", nativeQuery = true)
+	List<PTPaymentSummary> getCustomerPtPendingPayments(@Param("company") String company,@Param("branch") String branch);
 }
