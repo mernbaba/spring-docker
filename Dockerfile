@@ -9,7 +9,7 @@ COPY pom.xml .
 COPY src ./src
 
 # Build the project and create the jar file
-RUN mvn clean package -DskipTests
+RUN mvn clean package -e -DskipTests
 
 # Use the official OpenJDK image to run the application
 FROM openjdk:17-jdk-alpine
