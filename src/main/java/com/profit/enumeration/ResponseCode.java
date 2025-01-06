@@ -27,7 +27,8 @@ public enum ResponseCode {
 	OTP_EXPIRED(1015, "OTP_EXPIRED", "OTP expired try again"),
 	PASSWORD_UPDATED_SUCESSFULLY(1016, "PASSWORD_UPDATED_SUCESSFULLY", "Password updated successful"),
 	DUPLICATE_ENTRY(1017, "DUPLICATE_ENTRY", "Record already exists"),
-	INVALID_PERMISSIONS(1018, "INVALID_PERMISSIONS", "You do not have permission");
+	INVALID_PERMISSIONS(1018, "INVALID_PERMISSIONS", "You do not have permission"),
+	RECORD_NOT_FOUND(1019, "RECORD_NOT_FOUND", "Record Not Found");
 
 	private final int code;
 

@@ -28,6 +28,7 @@ public class CustomerPaymentSummaryDTO implements Serializable {
 	private String paymentPlan;
 	private String branchCode;
 	private String companyCode;
+	private Boolean isActive;
 	private String createdBy;
 	private LocalDate createdDate;
 	private String lastModifiedBy;

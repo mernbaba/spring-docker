@@ -69,5 +69,18 @@ public class PTPaymentSummaryController {
 		return paymentSummaryService.update(dto, branch, company, username);
 
 	}
+	
+	@PutMapping("/inactive/{id}")
+	public ResponseObject<?> updateById(@PathVariable long id){
+		String token = request.getHeader("Authorization");
+		token = StringUtils.replace(token, "Bearer ", "");
+
+		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
+		String company = (String) claims.get("company");
+		String branch = (String) claims.get("branch");
+		String username = claims.getSubject();
+		
+		return paymentSummaryService.deactivateSummaryRecordById(id, company, branch, username);
+	}
 
 }

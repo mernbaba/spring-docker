@@ -1,5 +1,6 @@
 package com.profit.controller;
 
+import java.time.LocalDate;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -7,6 +8,7 @@ import java.util.Map;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -40,8 +42,8 @@ public class CustomerPaymentSummeryController {
 	PTPaymentSummaryService ptPaymentSummaryService;
 
 	@GetMapping("/getAllUsers")
-	public ResponseObject<List<CustomerPaymentSummaryDTO>> getAllUsers(@RequestParam String fromDate,
-			@RequestParam String toDate, @RequestParam String customerCode) {
+	public ResponseObject<List<CustomerPaymentSummaryDTO>> getAllUsers(@RequestParam(required = false) String fromDate,
+			@RequestParam(required = false) String toDate, @RequestParam String customerCode) {
 		String token = request.getHeader("Authorization");
 		token = StringUtils.replace(token, "Bearer ", "");
 
@@ -74,8 +76,11 @@ public class CustomerPaymentSummeryController {
 		String company = (String) claims.get("company");
 		String branch = (String) claims.get("branch");
 		
-		responseMap.put("customerPaymentData", customerPaymentSummaryService.customerPendingPayments(company, branch).getResponse());
-		responseMap.put("ptPaymentData", ptPaymentSummaryService.customerPtPendingPayments(company, branch).getResponse());
+		LocalDate startDate = LocalDate.now().minusMonths(6);
+		LocalDate endDate = LocalDate.now();
+		
+		responseMap.put("customerPaymentData", customerPaymentSummaryService.customerPendingPayments(startDate, endDate, company, branch).getResponse());
+		responseMap.put("ptPaymentData", ptPaymentSummaryService.customerPtPendingPayments(startDate, endDate, company, branch).getResponse());
 		
 		return ResponseObject.success(responseMap);
 		
@@ -105,6 +110,19 @@ public class CustomerPaymentSummeryController {
 		String branch = (String) claims.get("branch");
 		String username = claims.getSubject();
 		return customerPaymentSummaryService.update(dto, branch, company, username);
+	}
+	
+	@PutMapping("/inactive/{id}")
+	public ResponseObject<?> updateById(@PathVariable long id){
+		String token = request.getHeader("Authorization");
+		token = StringUtils.replace(token, "Bearer ", "");
+
+		Claims claims = jwtTokenUtil.getAllClaimsFromToken(token);
+		String company = (String) claims.get("company");
+		String branch = (String) claims.get("branch");
+		String username = claims.getSubject();
+		
+		return customerPaymentSummaryService.deactivateCustomerSummaryRecordById(id, company, branch, username);
 	}
 
 }

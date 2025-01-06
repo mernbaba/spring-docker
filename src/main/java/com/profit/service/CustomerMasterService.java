@@ -11,6 +11,7 @@ import com.profit.repository.*;
 import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 //import com.profit.datamodel.CustomerReport;
@@ -220,7 +221,10 @@ public class CustomerMasterService {
 		} catch (CloudBaseException exp) {
 			exp.printStackTrace();
 			throw exp;
-		} catch (Exception e) {
+		}catch (DataIntegrityViolationException exp) {
+			exp.printStackTrace();
+			throw new CloudBaseException(ResponseCode.DUPLICATE_ENTRY);
+		}catch (Exception e) {
 			e.printStackTrace();
 			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
 		}

@@ -9,6 +9,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,19 +51,22 @@ public class PTPaymentSummaryService {
 
 			if (!StringUtils.isBlank(fromDate) && !StringUtils.isBlank(toDate)) {
 				DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
+				
 				LocalDate fromDt = LocalDate.parse(fromDate, format);
 				LocalDate toDt = LocalDate.parse(toDate, format);
+				
+				paymentEntityList = ptPaymentSummaryRepository.getActivePtsByDatesWithCustomerCode(fromDt, toDt,
+						customerCode, branch, company);
 
-				if (customerCode.equalsIgnoreCase("ALL")) {
-
-					paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDates(fromDt, toDt, branch, company);
-				} else {
-					paymentEntityList = ptPaymentSummaryRepository.getPtsByPlanDatesWithCustomerCode(fromDt, toDt,
-							customerCode, branch, company);
-				}
+//				if (customerCode.equalsIgnoreCase("ALL")) {
+//
+//					paymentEntityList = ptPaymentSummaryRepository.getActivePtsByDate(fromDt, toDt, branch, company);
+//				} else {
+//					
+//				}
 			} else {
-				paymentEntityList = ptPaymentSummaryRepository.findByCustomerCode(customerCode);
+				paymentEntityList = ptPaymentSummaryRepository.findByCustomerCodeAndCompanyCodeAndBranchCode(customerCode, company, branch);
+				
 			}
 			List<Long> paymentIds = paymentEntityList.stream().map(PTPaymentSummary::getId)
 					.collect(Collectors.toList());
@@ -259,9 +263,9 @@ public class PTPaymentSummaryService {
 
 	}
 
-	public ResponseObject<List<PTPaymentSummaryDTO>> customerPtPendingPayments(String company, String branch) {
+	public ResponseObject<List<PTPaymentSummaryDTO>> customerPtPendingPayments(LocalDate startDate, LocalDate endDate, String company, String branch) {
 
-		List<PTPaymentSummary> ptPaymentSummaryList = ptPaymentSummaryRepository.getCustomerPtPendingPayments(company,
+		List<PTPaymentSummary> ptPaymentSummaryList = ptPaymentSummaryRepository.getCustomerPtPendingPayments(startDate, endDate, company,
 				branch);
 		List<Long> paymentIds = ptPaymentSummaryList.stream().map(PTPaymentSummary::getId).collect(Collectors.toList());
 
@@ -285,6 +289,28 @@ public class PTPaymentSummaryService {
 		}
 
 		return ResponseObject.success(ptPaymentSummaryListDtoList);
+	}
+
+	public ResponseObject<?> deactivateSummaryRecordById(long id, String company, String branch, String username) {
+		try {
+			PTPaymentSummary summary = ptPaymentSummaryRepository.findById(id).orElseThrow(() -> new CloudBaseException(ResponseCode.RECORD_NOT_FOUND));
+			
+			if(ObjectUtils.isNotEmpty(summary)){
+				summary.setIsActive(false);
+				summary.setLastModifiedBy(username);
+				
+				ptPaymentSummaryRepository.save(summary);
+			}
+			
+			return new ResponseObject<>(ResponseCode.SUCCESS);
+		}catch (CloudBaseException exp) {
+			exp.printStackTrace();
+			throw exp;
+		}catch (Exception e) {
+			e.printStackTrace();
+			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
+		}
+		
 	}
 
 }

@@ -10,6 +10,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.ObjectUtils;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -55,22 +56,27 @@ public class CustomerPaymentSummaryService {
 
 		try {
 			DateTimeFormatter format = DateTimeFormatter.ofPattern("yyyy-MM-dd");
-
-			LocalDate fromDt = LocalDate.parse(fromDate, format);
-			LocalDate toDt = LocalDate.parse(toDate, format);
-
+			
 			List<CustomerPaymentSummaryDTO> dtoList = new ArrayList<CustomerPaymentSummaryDTO>();
 
 			List<CustomerPaymentSummary> paymentEntityList = new ArrayList<CustomerPaymentSummary>();
 
-			if (customerCode.equalsIgnoreCase("ALL")) {
-
-				paymentEntityList = customerPaymentSummaryRepository.getCustomersByPlanDates(fromDt, toDt, branch,
-						company);
-			} else {
+			if(fromDate != null && toDate != null) {
+				LocalDate fromDt = LocalDate.parse(fromDate, format);
+				LocalDate toDt = LocalDate.parse(toDate, format);
+				
 				paymentEntityList = customerPaymentSummaryRepository.getCustomersByPlanDatesWithCustomer(fromDt, toDt,
 						customerCode, branch, company);
+			}else {
+				paymentEntityList = customerPaymentSummaryRepository.findByCustomerCodeAndCompanyCodeAndBranchCode(customerCode, company, branch);
 			}
+
+//			if (customerCode.equalsIgnoreCase("ALL")) {
+//				paymentEntityList = customerPaymentSummaryRepository.getCustomersByPlanDates(fromDt, toDt, branch,
+//						company);
+//			} else {
+//				
+//			}
 
 			List<Long> paymentIds = paymentEntityList.stream().map(CustomerPaymentSummary::getId)
 					.collect(Collectors.toList());
@@ -286,9 +292,9 @@ public class CustomerPaymentSummaryService {
 
 	}
 
-	public ResponseObject<List<CustomerPaymentSummaryDTO>> customerPendingPayments(String company, String branch) {
+	public ResponseObject<List<CustomerPaymentSummaryDTO>> customerPendingPayments(LocalDate startDate, LocalDate endDate, String company, String branch) {
 		
-		List<CustomerPaymentSummary> customerPaymentSummaryList = customerPaymentSummaryRepository.getCustomerPendingPayments(company, branch);
+		List<CustomerPaymentSummary> customerPaymentSummaryList = customerPaymentSummaryRepository.getCustomerPendingPayments(startDate, endDate, company, branch);
 		List<Long> paymentIds = customerPaymentSummaryList.stream().map(CustomerPaymentSummary::getId)
 				.collect(Collectors.toList());
 		List<CustomerPaymentDetails> detailsList = customerPaymentDetailsRepository.getDataBySummaryIds(paymentIds);
@@ -312,6 +318,27 @@ public class CustomerPaymentSummaryService {
 		}
 		
 		return ResponseObject.success(customerPaymentSummaryDtoList);
+	}
+
+	public ResponseObject<?> deactivateCustomerSummaryRecordById(long id, String company, String branch,
+			String username) {
+		try {
+			CustomerPaymentSummary summary = customerPaymentSummaryRepository.findById(id)
+					.orElseThrow(() -> new CloudBaseException(ResponseCode.RECORD_NOT_FOUND));
+			
+			if(ObjectUtils.isNotEmpty(summary)) {
+				summary.setIsActive(false);
+				summary.setLastModifiedBy(username);
+				
+				customerPaymentSummaryRepository.save(summary);
+			}
+			return new ResponseObject<>(ResponseCode.SUCCESS);
+		}catch(CloudBaseException exp) {
+			throw exp;
+		}catch(Exception e) {
+			throw new CloudBaseException(ResponseCode.ERROR_STORING_DATA);
+		}
+		
 	}
 
 }

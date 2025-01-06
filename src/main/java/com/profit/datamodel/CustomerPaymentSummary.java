@@ -83,6 +83,9 @@ public class CustomerPaymentSummary implements Serializable {
 
 	@Column(name = "company_code", nullable = false, length = 56)
 	private String companyCode;
+	
+	@Column(name = "is_active", nullable = false)
+	private Boolean isActive;
 
 	@Column(name = "createdby", nullable = false, length = 32)
 	private String createdBy;
@@ -97,6 +100,13 @@ public class CustomerPaymentSummary implements Serializable {
 	@Column(name = "last_modified_date")
 	@UpdateTimestamp
 	private LocalDate lastModifiedDate;
+	
+	@PrePersist
+	protected void onCreate() {
+		if (isActive == null) {
+			isActive = true;
+		}
+	}
 	
 	@ManyToOne
 	@JoinColumn(name = "customer_code", referencedColumnName = "customer_code", insertable = false, updatable = false)

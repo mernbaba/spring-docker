@@ -44,6 +44,8 @@ public class PTPaymentSummaryDTO implements Serializable{
 	private String branchCode;
 
 	private String companyCode;
+	
+	private Boolean isActive;
 
 	private String createdBy;
 
